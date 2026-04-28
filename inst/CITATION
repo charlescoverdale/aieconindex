@@ -1,0 +1,46 @@
+citHeader("To cite the aieconindex package, use the first reference. To cite the underlying Anthropic Economic Index dataset and its methodological source paper, use the second and third.")
+
+bibentry(
+  bibtype = "Manual",
+  title   = "aieconindex: Access the Anthropic Economic Index Dataset",
+  author  = person("Charles", "Coverdale"),
+  year    = format(Sys.Date(), "%Y"),
+  note    = sprintf("R package version %s", utils::packageVersion("aieconindex")),
+  url     = "https://github.com/charlescoverdale/aieconindex"
+)
+
+bibentry(
+  bibtype = "Misc",
+  key     = "aei",
+  title   = "The Anthropic Economic Index",
+  author  = person("Anthropic"),
+  year    = "2025",
+  note    = "Hugging Face dataset, released under CC-BY-4.0",
+  url     = "https://huggingface.co/datasets/Anthropic/EconomicIndex"
+)
+
+bibentry(
+  bibtype = "Misc",
+  key     = "handa2025economic",
+  title   = "Which Economic Tasks are Performed with AI? Evidence from Millions of Claude Conversations",
+  author  = c(
+    person("Kunal", "Handa"),
+    person("Alex", "Tamkin"),
+    person("Miles", "McCain"),
+    person("Saffron", "Huang"),
+    person("Esin", "Durmus"),
+    person("Sarah", "Heck"),
+    person("Jared", "Mueller"),
+    person("Jerry", "Hong"),
+    person("Stuart", "Ritchie"),
+    person("Tim", "Belonax"),
+    person(c("Kevin", "K."), "Troy"),
+    person("Dario", "Amodei"),
+    person("Jared", "Kaplan"),
+    person("Jack", "Clark"),
+    person("Deep", "Ganguli")
+  ),
+  year    = "2025",
+  note    = "arXiv:2503.04761",
+  url     = "https://arxiv.org/abs/2503.04761"
+)

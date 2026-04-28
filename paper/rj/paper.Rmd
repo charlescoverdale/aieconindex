@@ -1,0 +1,207 @@
+---
+title: "aieconindex: An R Interface to the Anthropic Economic Index"
+author: Charles Coverdale
+abstract: >
+  Measures of how artificial intelligence is being used across the
+  economy have, until recently, depended on indirect proxies of
+  occupational exposure. The Anthropic Economic Index, introduced by
+  Handa and colleagues in 2025, takes a different approach: it
+  classifies millions of real Claude conversations against the O*NET
+  task taxonomy and the Standard Occupational Classification system,
+  and publishes recurring snapshots of the resulting usage shares as
+  open data. The \CRANpkg{aieconindex} package provides a tidy R
+  interface to those snapshots. It lists releases, fetches the raw
+  and enriched usage tables, retrieves request hierarchies and task
+  statements, and exposes country and US-state slices of the enriched
+  data through a single \code{aei\_tbl} class with provenance
+  metadata. Downloads are cached locally and citations are produced
+  in BibTeX or plain text. The package is developed at
+  \url{https://github.com/charlescoverdale/aieconindex}.
+preamble: |
+  \usepackage{longtable}
+bibliography: paper.bib
+output:
+  rticles::rjournal_article:
+    includes:
+      in_header: header.tex
+---
+
+## Introduction
+
+The \CRANpkg{aieconindex} package provides tidy R access to the Anthropic Economic Index (AEI), a recurring open dataset that measures how the Claude family of large language models is being used across the economy. Each release of the AEI maps Claude conversations to O*NET tasks [@onet] and to the Standard Occupational Classification system [@soc] using the privacy-preserving Clio system of @tamkin2024clio. The package wraps the dataset's Hugging Face mirror, lists releases, fetches the raw and enriched usage tables, retrieves request hierarchies, and exposes country and US-state slices of the enriched data through a single \code{aei\_tbl} S3 class.
+
+The motivating problem is friction. Anthropic publishes the AEI as a versioned set of CSVs and JSON files on Hugging Face, with replication notebooks in Python. Researchers who work in R have until now had to assemble their own download, parsing, and provenance scaffolding. The schema of the underlying data has also changed across releases, moving from wide-format release-root CSVs in early 2025 to a long-format \code{data/output/} layout from the September 2025 release onwards. \CRANpkg{aieconindex} papers over that variation and exposes a single, stable interface.
+
+\CRANpkg{aieconindex} differs from existing R infrastructure in three ways. First, it is the first R package to wrap the AEI specifically; the closest neighbour is \CRANpkg{httr2} for arbitrary file fetching and the Hugging Face Python \code{datasets} library for dataset listing. Second, it treats provenance as a first-class property: every returned table carries the release identifier, source URL, and fetch timestamp as attributes that survive subsetting. Third, it ships citation helpers that include the methodological source paper of @handa2025economic by default, so that downstream users do not have to hunt for it.
+
+## The Anthropic Economic Index
+
+The AEI is the empirical instrument introduced by @handa2025economic to measure AI usage in real economic tasks. Its design choices matter for any user of the package.
+
+**Task taxonomy.** Each Claude conversation is classified against the O*NET task statements [@onet], which are the same task descriptions used in the AI exposure literature [@felten2021occupational; @acemoglu2020robots]. This makes AEI directly comparable to existing exposure measures.
+
+**Privacy-preserving classification.** Classification runs through Clio [@tamkin2024clio], a system that uses Claude itself to summarise conversations under privacy constraints. Cluster summaries that fail Clio's checks (low cell counts, identifying information) are dropped. Users of the AEI see aggregated counts and shares, never raw conversations.
+
+**Augmentation versus automation.** Conversations are tagged with a six-level interaction type: directive, feedback loop, task iteration, learning, validation, or none. Following @handa2025economic, directive and feedback-loop interactions are read as automation, and the remaining three classified types as augmentation.
+
+**Release cadence.** Five releases have been published as of April 2026: 2025-02-10, 2025-03-27, 2025-09-15, 2026-01-15, and 2026-03-24. Each release updates the headline Claude model and adds new facets. The 2025-09-15 release introduced geographic breakdowns at the country and US-state level.
+
+## Package design
+
+\CRANpkg{aieconindex} is a thin wrapper over \code{httr2} requests against the Hugging Face raw-file URLs and tree-listing API. Imports are \code{cli} for messaging, \code{httr2} for the HTTP layer, \code{jsonlite} for parsing the cluster trees, and the base \code{tools}, \code{stats}, and \code{utils} packages. R 4.1.0 or later is required. No API key is needed.
+
+### The aei_tbl class
+
+The \code{aei\_tbl} class is a \code{data.frame} with an \code{aei\_query} attribute holding query metadata. The attribute carries the endpoint, the resolved release identifier, the source URL, and the fetch timestamp; it is preserved across row and column subsetting. Custom \code{print} and \code{summary} methods emit a one-line provenance header above the table body so that the analyst can always see where a given object came from. The class is designed to plug into existing R workflows: it inherits from \code{data.frame}, so any function that takes a data frame works without conversion.
+
+### Discovery and download
+
+Three functions cover discovery: \code{aei\_releases()} lists known and live releases, \code{aei\_files()} returns the recursive file tree for a given release, and \code{aei\_index()} fetches the canonical usage table. The \code{aei\_index()} function uses a regular-expression heuristic to pick the right file, because the AEI naming convention has shifted across releases. When the heuristic surprises the user, \code{aei\_files()} surfaces the available paths and \code{aei\_download()} fetches any of them by name.
+
+### Caching
+
+Downloaded files are cached locally under the path returned by \code{aei\_cache\_dir()}, which defaults to the standard user cache directory for the package. The cache is keyed by release identifier and relative path, and \code{aei\_cache\_info()} reports its contents. Subsequent calls to the same release are served from disk.
+
+### Reproducibility
+
+\code{aei\_cite()} returns a citation in plain text, BibTeX, or \code{bibentry} form. The default behaviour includes the source paper of @handa2025economic alongside the dataset citation, because attribution under the dataset's CC-BY licence is required for any redistribution. The function also surfaces the release-specific Anthropic report PDF when one is bundled with the release.
+
+## Discovery and download
+
+The minimum-effort workflow is three lines: list releases, list files in one of them, and fetch the canonical table. The function \code{aei\_releases()} merges the bundled release metadata with a live listing from Hugging Face, falling back to the bundled list when the network is unavailable. Each row carries the release date, the headline Claude model, and a one-line note. Because the AEI has shipped five releases over fourteen months, this snapshot view is enough to decide which release a downstream analysis should pin to.
+
+The function \code{aei\_files()} returns the file tree for a single release. By default it recurses into sub-directories, which is necessary because later releases group files under \code{data/output/} rather than at the release root. The output is an \code{aei\_tbl} with three columns: \code{path}, \code{type} (file or directory), and \code{size\_bytes}. The recursive listing is one HTTP call per directory and is cached for the life of the R session.
+
+The function \code{aei\_index()} is the convenience wrapper for the canonical usage CSV. It takes a release identifier, a \code{source} (\code{"claude\_ai"} or \code{"1p\_api"}), and a \code{variant} (\code{"raw"} or \code{"enriched"}), runs a regular-expression match against the file tree, downloads the most recent date window when several match, parses the CSV, and returns an \code{aei\_tbl} with provenance attributes. The function \code{aei\_download()} is the lower-level escape hatch: pass any path returned by \code{aei\_files()} and it returns a parsed data frame for CSVs, a parsed list for JSON, or a local cached path for any other extension.
+
+A typical end-to-end workflow takes four lines:
+
+\begin{Schunk}
+\begin{Sinput}
+library(aieconindex)
+releases <- aei_releases()
+files    <- aei_files("2025-09-15")
+df       <- aei_index("2025-09-15", source = "claude_ai",
+                      variant = "enriched")
+\end{Sinput}
+\end{Schunk}
+
+The first call returns the table of known releases, joining bundled metadata with the live Hugging Face listing. The second returns the file tree of the third release, which from 2025-09-15 onwards lives under \code{data/output/}. The third call resolves the canonical enriched CSV (about 27 megabytes), caches it locally, and returns it as an \code{aei\_tbl}. Subsequent calls to the same file are served from disk; a single call to \code{aei\_cache\_info()} shows the cache state.
+
+Table \ref{tab:releases} gives an at-a-glance summary of the five releases the package bundles metadata for. New releases are picked up automatically by \code{aei\_releases(live = TRUE)}, which is the default.
+
+\begin{table}[tbp]
+\centering
+\small
+\begin{tabular}{lll}
+\toprule
+Release & Headline model & Notes \\
+\midrule
+2025-02-10 & Claude 3.5 Sonnet & Initial release; O*NET task mappings \\
+2025-03-27 & Claude 3.7 Sonnet & Cluster-level insights; v2 replication notebook \\
+2025-09-15 & Claude Sonnet 4 & Geographic + first-party API data added \\
+2026-01-15 & Claude Sonnet 4.5 & Economic primitives added \\
+2026-03-24 & Claude Opus 4.5/4.6 & Learning curves added \\
+\bottomrule
+\end{tabular}
+\caption{\textbf{Five Anthropic Economic Index releases as of April 2026.} Each row corresponds to a directory on the Hugging Face dataset mirror. The \code{aieconindex} package recognises every release listed here and merges this metadata with a live listing.}
+\label{tab:releases}
+\end{table}
+
+## Structured access
+
+Three further functions cover the structured facets that the AEI ships alongside the headline usage tables.
+
+\code{aei\_clusters()} returns the request-hierarchy tree as a parsed nested list. The tree is the output of the Clio system [@tamkin2024clio]: each top-level entry has a name, an optional description, an optional count, and a list of children mirroring the same shape. Cluster trees ship from the 2025-09-15 release onwards, separately for the Claude.ai consumer product and the first-party API.
+
+\code{aei\_tasks()} returns the bundled O*NET task statements. The standalone task-statements file ships in the 2025-03-27 release; later releases reference O*NET implicitly through the enriched index file rather than redistributing the statements. The default \code{release} argument is therefore set to the 2025-03-27 release for that reason.
+
+\code{aei\_geography()} filters the enriched usage table to country or US-state rows. From the 2025-09-15 release onwards, the enriched CSV is in long format with columns \code{geo\_id}, \code{geography} (one of \code{"country"}, \code{"state\_us"}, or \code{"global"}), \code{facet}, \code{variable}, \code{cluster\_name}, and \code{value}. The function reads the enriched table via \code{aei\_index()} with \code{variant = "enriched"} and filters on the \code{geography} column. Country codes are ISO-3 (\code{"GBR"}, \code{"AUS"}, \code{"USA"}). Releases before 2025-09-15 do not contain geographic data and the function errors informatively.
+
+## Reproducibility
+
+The package's reproducibility surface is \code{aei\_cite()}, the cache helpers, and the explicit release pinning that \code{aei\_index()} encourages. The default \code{release = "latest"} resolves to the most recent release at call time, which is convenient for exploration but unsuitable for production: the resolution will silently change when Anthropic ships a new release. Downstream pipelines should pin a release identifier explicitly. The provenance attributes on every returned \code{aei\_tbl} make this auditable: the \code{source\_url} attribute records the exact Hugging Face raw URL the data was fetched from.
+
+\code{aei\_cite()} returns three pieces of information by default: the dataset citation pointing at the Hugging Face release, the methodological source paper of @handa2025economic, and the Anthropic report PDF for the release when one is bundled. Setting \code{method = FALSE} returns only the dataset citation. The BibTeX form uses keys \code{aei\_<release>} for the dataset and \code{handa2025economic} for the paper, ready to be pasted into a \code{.bib} file.
+
+## Replication: augmentation versus automation in March 2025
+
+Figure \ref{fig:augaut} reproduces a headline finding from the 2025-03-27 release using a single \code{aei\_download()} call. The file \code{automation\_vs\_augmentation\_v2.csv} contains the share of classified Claude.ai conversations in each of the six interaction types defined by @handa2025economic. Aggregating directive and feedback-loop interactions as automation, and task iteration, learning, and validation as augmentation, gives the headline finding that augmentation is the dominant mode by a substantial margin.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=\linewidth]{figures/fig1.pdf}
+\caption{\textbf{Augmentation interactions account for the larger share of classified Claude.ai conversations in March 2025.} Each bar shows the percentage of classified conversations in that interaction type. Following \citet{handa2025economic}, directive and feedback-loop interactions are read as automation; task iteration, learning, and validation are read as augmentation. The \emph{none} bar is the residual unclassified share. Source: \href{https://huggingface.co/datasets/Anthropic/EconomicIndex/tree/main/release_2025_03_27}{Anthropic Economic Index, release 2025-03-27}, fetched via \code{aei\_download()}.}
+\label{fig:augaut}
+\end{figure}
+
+## Case study: UK occupational exposure to Claude usage in 2025
+
+Figure \ref{fig:uktasks} ranks the top fifteen O*NET tasks in the United Kingdom slice of the 2025-09-15 release, by share of Claude.ai conversations. Software development and debugging dominate the leaderboard, in line with the cross-country pattern documented in the AEI third report. The tail of the top fifteen contains substantive non-coding tasks: technical writing, data analysis, and customer-facing diagnostic tasks. The single \code{aei\_geography()} call that produces this ranking,
+
+\begin{quote}
+\code{uk <- aei\_geography("2025-09-15", country = "GBR")}
+\end{quote}
+
+returns 3,068 long-format rows for the United Kingdom, of which 329 are O*NET task percentages. The figure filters to the rows where \code{facet == "onet\_task"} and \code{variable == "onet\_task\_pct"}, sorts on the \code{value} column, and takes the head.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=\linewidth]{figures/fig2.pdf}
+\caption{\textbf{Software development and debugging dominate United Kingdom Claude.ai usage in August 2025.} Each bar shows the share of UK Claude.ai conversations classified against that O*NET task. Bars are sorted descending and truncated to the top fifteen tasks. Long task labels are abbreviated. Source: \href{https://huggingface.co/datasets/Anthropic/EconomicIndex/tree/main/release_2025_09_15}{Anthropic Economic Index, release 2025-09-15}, fetched via \code{aei\_geography()} for \code{country = "GBR"}.}
+\label{fig:uktasks}
+\end{figure}
+
+## Cross-country comparison
+
+Figure \ref{fig:cross} shows the usage per-capita index for fifteen OECD economies. The index is constructed by Anthropic during the enrichment step and equals one when a country's share of Claude.ai usage matches its share of working-age population (ages 15 to 64). Values above one mean a country is over-represented relative to its working-age population; values below one mean it is under-represented. Israel, Singapore, and Australia sit at the top of this league table; Italy, Japan, and Korea sit at the bottom. The data comes from the same call as the United Kingdom slice; the only difference is the cluster-name filter, which selects the country-level overall figure rather than a task-level row.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=\linewidth]{figures/fig3.pdf}
+\caption{\textbf{Per-capita Claude.ai usage varies five-fold across selected OECD economies in August 2025.} Each bar shows the country's usage per working-age capita, expressed as an index where one equals proportional to working-age population share. Dashed line at one. Source: \href{https://huggingface.co/datasets/Anthropic/EconomicIndex/tree/main/release_2025_09_15}{Anthropic Economic Index, release 2025-09-15}, fetched via \code{aei\_index()} with the \code{claude\_ai} source and \code{enriched} variant.}
+\label{fig:cross}
+\end{figure}
+
+## Limitations
+
+Six limitations apply to \CRANpkg{aieconindex} and the data it returns.
+
+1. The package is a tidy interface to the AEI, not a measurement framework. Substantive caveats about the AEI's coverage and methodology rest on @handa2025economic and @tamkin2024clio.
+2. AEI usage data reflects who uses Claude. The user base skews toward English speakers, knowledge workers, and software developers; the dataset is not a labour-force-representative sample of any economy.
+3. The Clio classification pipeline is proprietary. Users cannot independently audit the cluster assignments beyond what is described in @tamkin2024clio.
+4. Cross-release comparisons are not automatic. Both the underlying Claude model and the Clio version change between releases. Pipelines that compare two releases should treat the comparison as model-version-dependent.
+5. The file-discovery heuristic in \code{aei\_index()} relies on the AEI keeping its current naming convention. A future restructure would break the function and require a package update.
+6. Licences vary across components. The AEI dataset is released under CC-BY-4.0, the package is released under MIT, and the bundled O*NET and SOC reference data inherit their respective licences. Users should cite the underlying paper of @handa2025economic for any component used in academic work, not \CRANpkg{aieconindex} alone.
+
+## Formula appendix
+
+Two definitions are used throughout the AEI and worth stating explicitly.
+
+The augmentation share is the share of classified collaboration interactions in the augmentation family:
+
+$$
+s_{\text{aug}} = \frac{n_{\text{task iter.}} + n_{\text{learning}} + n_{\text{validation}}}{n_{\text{classified}}}
+$$
+
+where the numerator sums conversations in the three augmentation interaction types and the denominator excludes the unclassifiable \emph{none} bucket.
+
+The usage per-capita index for country $c$ in release $r$ is
+
+$$
+I_{c,r} = \frac{u_{c,r} / U_{r}}{p_c / P}
+$$
+
+where $u_{c,r}$ is country $c$'s Claude.ai conversation count in release $r$, $U_{r}$ is the global classified total for that release, $p_c$ is country $c$'s working-age population, and $P$ is global working-age population. An index of one means a country's usage share matches its working-age population share.
+
+\FloatBarrier
+
+## Conclusion
+
+\CRANpkg{aieconindex} gives R users a tidy, cached, provenance-aware interface to the Anthropic Economic Index. Discovery, download, and citation are each one function call. Country and US-state slices of the enriched table are available from the 2025-09-15 release onwards through a single call to \code{aei\_geography()}, and citation defaults point at @handa2025economic so that downstream users do not have to hunt for the methodological source paper.
+
+The natural next step is a v0.2 release adding occupational crosswalks (SOC to ANZSCO, ISCO, and the UK SOC2010) and joins to the Office for National Statistics Labour Force Survey, the U.S. Bureau of Labor Statistics OEWS, and the Australian Bureau of Statistics Labour Force Survey, so that AEI usage shares can be reweighted by national working-age employment shares. The package is developed at \url{https://github.com/charlescoverdale/aieconindex} and issues are welcome.
+
+## Acknowledgements {-}
+
+I thank Anthropic for releasing the Anthropic Economic Index dataset under CC-BY-4.0 and for shipping replication notebooks alongside each release; the team at Hugging Face for hosting the dataset and providing the open tree-listing API the package relies on; the U.S. Department of Labor's Employment and Training Administration for maintaining the O*NET taxonomy; and the U.S. Bureau of Labor Statistics for maintaining the Standard Occupational Classification. The package builds on \CRANpkg{httr2}, \CRANpkg{cli}, and \CRANpkg{jsonlite} and would not exist without their authors.

@@ -1,0 +1,25 @@
+cff-version: 1.2.0
+message: "If you use this package, please cite both it and the underlying Anthropic Economic Index dataset."
+title: "aieconindex: Access the Anthropic Economic Index Dataset"
+abstract: >
+  An R package providing tidy access to the Anthropic Economic Index
+  (AEI) dataset hosted on Hugging Face. The AEI maps usage of the
+  Claude family of large language models to occupations and tasks
+  using the O*NET taxonomy and the Standard Occupational Classification
+  system.
+authors:
+  - family-names: "Coverdale"
+    given-names: "Charles"
+    email: "charlesfcoverdale@gmail.com"
+version: "0.1.0"
+date-released: "2026-04-28"
+license: MIT
+repository-code: "https://github.com/charlescoverdale/aieconindex"
+references:
+  - type: data
+    title: "The Anthropic Economic Index"
+    authors:
+      - name: "Anthropic"
+    year: 2025
+    url: "https://huggingface.co/datasets/Anthropic/EconomicIndex"
+    notes: "Dataset released under CC-BY-4.0."

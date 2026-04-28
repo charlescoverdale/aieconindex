@@ -1,0 +1,89 @@
+---
+title: "Getting started with aieconindex"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting started with aieconindex}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+# Getting started
+
+`aieconindex` provides tidy R access to the [Anthropic Economic Index](https://www.anthropic.com/economic-index) (AEI) dataset hosted on Hugging Face. The AEI is a recurring release from Anthropic that maps usage of the Claude family of large language models to occupations and tasks using the O*NET taxonomy and the Standard Occupational Classification (SOC) system.
+
+## Installation
+
+```{r}
+# install.packages("remotes")
+remotes::install_github("charlescoverdale/aieconindex")
+library(aieconindex)
+```
+
+## Discovering releases
+
+The Anthropic Economic Index is released as dated snapshots (typically every few months). `aei_releases()` lists the snapshots available on Hugging Face.
+
+```{r}
+aei_releases()
+```
+
+You can fetch the file tree of any single release with `aei_files()`. This is useful when you want to know exactly what is available before downloading anything.
+
+```{r}
+aei_files("2025-03-27", recursive = FALSE)
+```
+
+## Fetching a usage table
+
+`aei_index()` is the convenience wrapper for the canonical usage table of a release. The shape and exact filename of that table varies across releases (the AEI restructured its directory layout in late 2025); this function papers over that variation.
+
+```{r}
+df <- aei_index("latest", source = "claude_ai", variant = "raw")
+head(df)
+```
+
+The `source` argument selects between Claude.ai consumer traffic (`"claude_ai"`) and first-party API traffic (`"1p_api"`). The `variant` argument selects between raw counts (`"raw"`) and tables already enriched with O*NET and SOC metadata (`"enriched"`).
+
+## Fetching arbitrary files
+
+For files that aren't covered by `aei_index()`, use `aei_download()`:
+
+```{r}
+soc <- aei_download("2025-03-27", "SOC_Structure.csv")
+hierarchy <- aei_download("2025-09-15",
+                          "data/output/request_hierarchy_tree_claude_ai.json")
+```
+
+CSV files come back as data frames; JSON files come back as parsed lists.
+
+## The aei_tbl class
+
+All data-returning functions emit an object of class `aei_tbl`: a `data.frame` with provenance metadata stored in the `aei_query` attribute. Inspect it directly:
+
+```{r}
+attr(df, "aei_query")
+```
+
+The class also dispatches a custom `print()`, `summary()`, and `[` method that preserves the metadata when the table is subset.
+
+## Caching
+
+Downloaded files are cached under `tools::R_user_dir("aieconindex", "cache")`. Override with `options(aieconindex.cache_dir = "/your/path")` before the first call. Inspect the cache with `aei_cache_info()` and clear it with `aei_cache_clear()`.
+
+## Citing the data
+
+The Anthropic Economic Index dataset is released under Creative Commons Attribution 4.0 International (CC-BY-4.0). When you use the data in published work, cite it.
+
+```{r}
+aei_cite("2026-03-24", format = "bibtex")
+```
+
+`aei_cite()` accepts `format = c("text", "bibtex", "bibentry")` and either a release id or `"all"` (the default) to cite the project as a whole.

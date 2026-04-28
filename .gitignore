@@ -1,0 +1,30 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+*.Rproj
+.DS_Store
+inst/doc
+doc
+Meta
+/Meta/
+/doc/
+/.quarto/
+*.tar.gz
+*.Rcheck
+
+# Local AEI download cache used by paper/make_figures.R
+paper/.aei_cache/
+
+# LaTeX build artefacts
+paper/rj/*.aux
+paper/rj/*.bbl
+paper/rj/*.blg
+paper/rj/*.log
+paper/rj/*.out
+paper/rj/*.toc
+paper/rj/*.lof
+paper/rj/*.lot
+paper/rj/*.fls
+paper/rj/*.fdb_latexmk
+paper/rj/paper.tex
