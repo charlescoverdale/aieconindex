@@ -34,6 +34,7 @@ A companion paper (R Journal style) lives under [`paper/rj/`](paper/rj/) in this
   - [Discovery](#discovery)
   - [Download](#download)
   - [Structured access](#structured-access)
+  - [Analysis](#analysis)
   - [Reproducibility](#reproducibility)
   - [Cache management](#cache-management)
 - [The aei_tbl class](#the-aei_tbl-class)
@@ -163,6 +164,34 @@ us_states <- aei_geography("2025-09-15", geography = "state_us")
 ```
 
 `aei_geography()` filters the enriched long-format table on the `geography` column. Country codes are ISO-3 in the enriched data (`"GBR"`, `"AUS"`, `"USA"`). Releases before 2025-09-15 do not contain geographic data and the function errors informatively.
+
+### Analysis
+
+| Function | Returns |
+|---|---|
+| `aei_compare(release_a, release_b, ...)` | Release-on-release diff with `value_a`, `value_b`, `delta`, `pct_change` |
+| `aei_link(x, y, by, type)` | Generic merge that preserves the `aei_tbl` class; for splicing AEI to user-supplied data on a shared key |
+| `aei_concentration(x, share_col, group_cols, top_n)` | HHI, top-N concentration ratio, Shannon entropy on usage shares |
+
+```r
+# How did the cluster shares move between Sept 2025 and March 2026?
+diff <- aei_compare("2025-09-15", "2026-03-24")
+head(diff[order(-abs(diff$delta)), ])
+
+# Splice AEI country shares to your own GDP-per-capita table
+overlay <- data.frame(
+  geo_id = c("GBR", "AUS", "USA"),
+  gdp_pc = c(48000, 65000, 80000)
+)
+joined <- aei_link(aei_geography("2025-09-15"), overlay, by = "geo_id")
+
+# How concentrated is UK Claude.ai usage across O*NET tasks?
+uk <- aei_geography("2025-09-15", country = "GBR")
+uk_tasks <- uk[uk$facet == "onet_task" & uk$variable == "onet_task_pct", ]
+aei_concentration(uk_tasks)
+```
+
+`aei_link()` is the entry point for "bring your own data" workflows. It's a thin wrapper over `base::merge()` that preserves the `aei_tbl` class and provenance metadata, supports left / inner / full joins, and warns when a join produces zero rows. Use it to link the AEI to occupational crosswalks (SOC ↔ ANZSCO ↔ ISCO ↔ SOC2020 UK), to national labour-force survey data (ONS, BLS OEWS, ABS), or to any other external table keyed on country code or task identifier.
 
 ### Reproducibility
 
