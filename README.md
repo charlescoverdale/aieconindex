@@ -6,17 +6,30 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Data: CC-BY 4.0](https://img.shields.io/badge/data-CC--BY%204.0-blue.svg)](https://creativecommons.org/licenses/by/4.0/)
 
-`aieconindex` provides clean, tidy access to the [Anthropic Economic Index](https://www.anthropic.com/economic-index) (AEI) dataset hosted on [Hugging Face](https://huggingface.co/datasets/Anthropic/EconomicIndex). The AEI is a recurring open dataset that maps usage of the Claude family of large language models to occupations and tasks using the [O*NET](https://www.onetonline.org/) task taxonomy and the [Standard Occupational Classification](https://www.bls.gov/soc/) (SOC) system. Classification runs through Anthropic's privacy-preserving [Clio](https://arxiv.org/abs/2412.13678) system and follows the methodology of [Handa et al. (2025)](https://arxiv.org/abs/2503.04761).
+## Background
 
-The package lists releases, fetches the raw and enriched usage tables, retrieves task statements, request hierarchies, and country-level breakdowns, and caches everything locally so subsequent calls are instant. No API key is required.
+In early 2025 Anthropic published a new kind of economic dataset. Until then, almost everything we knew about how AI was actually being used in the economy came from one of two places: surveys (asking people what they used AI for) or indirect proxies (working out which jobs theoretically had the most AI-exposed tasks, and assuming usage followed exposure). The [Anthropic Economic Index](https://www.anthropic.com/economic-index) (AEI) took a more direct approach. Anthropic took millions of real Claude conversations, classified each one against the U.S. Department of Labor's [O*NET](https://www.onetonline.org/) task taxonomy and its [Standard Occupational Classification](https://www.bls.gov/soc/) system, and reported the resulting usage shares as open data. The methodology is documented in [Handa et al. (2025)](https://arxiv.org/abs/2503.04761). The privacy-preserving system that does the classification, in which Claude itself summarises other Claude conversations under tight rules, is described in [Tamkin et al. (2024)](https://arxiv.org/abs/2412.13678).
+
+The dataset is published on [Hugging Face](https://huggingface.co/datasets/Anthropic/EconomicIndex) as a recurring set of snapshots, all released under CC-BY-4.0. Five releases have shipped between February 2025 and March 2026, covering Claude 3.5 Sonnet through Opus 4.5/4.6. Each release reports, for the time window it covers, the share of classified conversations that mapped to each O*NET task and each SOC occupational group, plus a split between automation-style interactions (where the user delegates a task to Claude) and augmentation-style interactions (where the user works through a task with Claude). From the September 2025 release onwards, the data is also broken down by country and US state, and a hierarchical clustering of request types produced by Clio is shipped as JSON. From the January 2026 release onwards, a set of derived "economic primitives" sit alongside the raw shares.
+
+The data is open, the methodology is documented, and Anthropic ships replication notebooks alongside each release. But for anyone working in R, the dataset was inconvenient to use:
+
+- The replication notebooks are Python only. There was no R wrapper.
+- The directory layout changed between the March 2025 and September 2025 releases, moving from wide-format release-root CSVs to a long-format `data/output/` layout. Code written for one release would silently break on the next.
+- There were no off-the-shelf helpers for the analyses people actually wanted: pulling out a single country, ranking O*NET tasks by share, comparing two releases. Every analysis started from raw CSV wrangling.
+- Citation was scattered. The methodological source paper (Handa et al. 2025), the Clio paper (Tamkin et al. 2024), and the per-release report PDFs all lived in different places.
+- There was no bridge from AEI usage shares to national labour statistics. Anyone wanting to weight AEI shares by working-age employment from the UK Office for National Statistics, the U.S. Bureau of Labor Statistics OEWS, or the Australian Bureau of Statistics Labour Force survey had to assemble their own crosswalks.
+
+`aieconindex` is the R-side answer to those gaps. It lists releases, fetches the raw and enriched usage tables, retrieves task statements and request hierarchies, exposes country and US-state slices through a single function, caches downloads locally, and produces ready-made citations that include the methodological source paper by default. Schema differences across releases are handled internally; pinning a release id keeps downstream pipelines reproducible. No API key is required. Three runtime dependencies (`cli`, `httr2`, `jsonlite`) plus base R.
 
 A companion paper (R Journal style) lives under [`paper/rj/`](paper/rj/) in this repo.
 
 ## Table of contents
 
+- [Background](#background)
 - [Installation](#installation)
 - [Quick start](#quick-start)
-- [What is the Anthropic Economic Index?](#what-is-the-anthropic-economic-index)
+- [Three design choices worth knowing](#three-design-choices-worth-knowing)
 - [Function reference](#function-reference)
   - [Discovery](#discovery)
   - [Download](#download)
@@ -76,17 +89,11 @@ uk <- aei_geography("2025-09-15", country = "GBR")
 aei_cite("2025-09-15", format = "bibtex")
 ```
 
-## What is the Anthropic Economic Index?
-
-The Anthropic Economic Index (AEI) is an open, recurring dataset published by Anthropic that measures how the Claude family of large language models is being used across the economy. The dataset was introduced by [Handa et al. (2025)](https://arxiv.org/abs/2503.04761) and is hosted on [Hugging Face](https://huggingface.co/datasets/Anthropic/EconomicIndex) under [Creative Commons Attribution 4.0 International](https://creativecommons.org/licenses/by/4.0/).
-
-Three design choices matter when using the data:
+## Three design choices worth knowing
 
 1. **Task taxonomy.** Each Claude conversation is classified against the [O*NET task statements](https://www.onetonline.org/), the same task descriptions used by the U.S. Department of Labor and by the AI exposure literature ([Felten, Raj, and Seamans 2021](https://doi.org/10.1002/smj.3286); [Acemoglu and Restrepo 2020](https://doi.org/10.1086/705716)). This makes AEI directly comparable to existing exposure measures.
-2. **Privacy-preserving classification.** Classification runs through [Clio](https://arxiv.org/abs/2412.13678), a system that uses Claude itself to summarise conversations under privacy constraints. Cluster summaries that fail Clio's checks (low cell counts, identifying information) are dropped. Users see only aggregated counts and shares, never raw conversations.
+2. **Privacy-preserving classification.** Classification runs through [Clio](https://arxiv.org/abs/2412.13678). Cluster summaries that fail Clio's privacy checks (low cell counts, identifying information) are dropped before publication. Users see only aggregated counts and shares, never raw conversations.
 3. **Augmentation versus automation.** Conversations are tagged with one of six interaction types: directive, feedback loop, task iteration, learning, validation, or none. Following [Handa et al. (2025)](https://arxiv.org/abs/2503.04761), directive and feedback-loop interactions are read as automation; task iteration, learning, and validation as augmentation.
-
-Five releases have been published as of April 2026: 2025-02-10, 2025-03-27, 2025-09-15, 2026-01-15, and 2026-03-24. Each release updates the headline Claude model and adds new facets. The 2025-09-15 release introduced geographic breakdowns at the country and US-state level; the 2026-01-15 release added economic primitives; the 2026-03-24 release added learning curves.
 
 ## Function reference
 
