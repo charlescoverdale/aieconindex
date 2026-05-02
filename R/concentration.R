@@ -53,9 +53,11 @@
 #' @export
 #' @examples
 #' \donttest{
+#' op <- options(aieconindex.cache_dir = tempdir())
 #' uk <- aei_geography("2025-09-15", country = "GBR")
 #' uk_tasks <- uk[uk$facet == "onet_task" & uk$variable == "onet_task_pct", ]
 #' aei_concentration(uk_tasks)
+#' options(op)
 #' }
 aei_concentration <- function(x,
                               share_col = NULL,

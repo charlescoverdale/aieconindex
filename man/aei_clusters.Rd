@@ -41,8 +41,10 @@ Releases before 2025-09-15 do not contain request-hierarchy trees.
 }
 \examples{
 \donttest{
+op <- options(aieconindex.cache_dir = tempdir())
 tree <- aei_clusters("2025-09-15")
 length(tree)
+options(op)
 }
 }
 \references{

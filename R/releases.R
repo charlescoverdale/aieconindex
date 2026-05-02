@@ -17,8 +17,10 @@
 #' @export
 #' @examples
 #' \donttest{
+#' op <- options(aieconindex.cache_dir = tempdir())
 #' aei_releases()
 #' aei_releases(live = FALSE)
+#' options(op)
 #' }
 aei_releases <- function(live = TRUE) {
   bundled <- .aei_known_releases
@@ -77,8 +79,9 @@ aei_releases <- function(live = TRUE) {
 #' @export
 #' @examples
 #' \donttest{
-#' aei_files("latest")
+#' op <- options(aieconindex.cache_dir = tempdir())
 #' aei_files("2026-03-24", recursive = FALSE)
+#' options(op)
 #' }
 aei_files <- function(release = "latest", recursive = TRUE) {
   release_id <- .aei_resolve_release(release)

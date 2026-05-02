@@ -63,9 +63,9 @@ authoritative schema.
 }
 \examples{
 \donttest{
-aei_index("latest")
-aei_index("2026-03-24", source = "1p_api")
+op <- options(aieconindex.cache_dir = tempdir())
 aei_index("2025-09-15", variant = "enriched")
+options(op)
 }
 }
 \references{

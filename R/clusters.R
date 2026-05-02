@@ -33,8 +33,10 @@
 #' @export
 #' @examples
 #' \donttest{
+#' op <- options(aieconindex.cache_dir = tempdir())
 #' tree <- aei_clusters("2025-09-15")
 #' length(tree)
+#' options(op)
 #' }
 aei_clusters <- function(release = "latest",
                          source = c("claude_ai", "1p_api"),

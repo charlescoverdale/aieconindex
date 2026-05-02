@@ -53,9 +53,9 @@
 #' @export
 #' @examples
 #' \donttest{
-#' aei_index("latest")
-#' aei_index("2026-03-24", source = "1p_api")
+#' op <- options(aieconindex.cache_dir = tempdir())
 #' aei_index("2025-09-15", variant = "enriched")
+#' options(op)
 #' }
 aei_index <- function(release = "latest",
                       source = c("claude_ai", "1p_api"),
@@ -121,8 +121,9 @@ aei_index <- function(release = "latest",
 #' @export
 #' @examples
 #' \donttest{
+#' op <- options(aieconindex.cache_dir = tempdir())
 #' aei_download("2025-03-27", "task_pct_v2.csv")
-#' aei_download("2025-09-15", "data/output/request_hierarchy_tree_claude_ai.json")
+#' options(op)
 #' }
 aei_download <- function(release, path, use_cache = TRUE) {
   release_id <- .aei_resolve_release(release)

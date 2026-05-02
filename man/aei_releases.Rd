@@ -24,8 +24,10 @@ the bundled list of releases known at package build time.
 }
 \examples{
 \donttest{
+op <- options(aieconindex.cache_dir = tempdir())
 aei_releases()
 aei_releases(live = FALSE)
+options(op)
 }
 }
 \seealso{

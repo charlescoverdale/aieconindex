@@ -23,8 +23,9 @@ are available before calling \code{\link[=aei_download]{aei_download()}} or \cod
 }
 \examples{
 \donttest{
-aei_files("latest")
+op <- options(aieconindex.cache_dir = tempdir())
 aei_files("2026-03-24", recursive = FALSE)
+options(op)
 }
 }
 \seealso{

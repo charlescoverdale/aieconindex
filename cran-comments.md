@@ -1,17 +1,16 @@
-# aieconindex 0.2.0
+# aieconindex 0.1.0
+
+This is a new submission.
 
 ## Test environments
 
-* Local: macOS 14.x, R 4.5.2
-* GitHub Actions: ubuntu-latest (release, devel), windows-latest (release), macos-latest (release) — to be added
+* Local: macOS 14.x (arm64), R 4.5.2 — 0 errors, 0 warnings, 0 notes
+* win-builder R-devel — submitted 2026-04-29
+* GitHub Actions CI: to be added
 
 ## R CMD check results
 
-0 errors | 0 warnings | 0 notes
-
-(Two benign notes are accepted by CRAN policy: "New submission" on first
-release and "unable to verify current time" on systems without a network
-clock; neither indicates a real issue.)
+0 errors | 0 warnings | 0 notes (locally)
 
 ## What this package does
 
@@ -28,20 +27,19 @@ classification system is described in Tamkin et al. (2024)
 The package follows the same architecture as several other CRAN
 packages by the same author that wrap a single open dataset
 (`fred`, `boe`, `hmrc`, `ons`, `comtrade`): cli/httr2 + an `_tbl` S3
-class with provenance attributes + `tools::R_user_dir` cache. Twelve
-exports for discovery, download, slicing, comparison, joining
-user-supplied data, and concentration analysis.
+class with provenance attributes + `tools::R_user_dir` cache.
 
 ## Network and cache policy
 
-* No examples write outside `tempdir()`. Cache examples either redirect
-  via `options(aieconindex.cache_dir = tempdir())` or are wrapped in
-  `\donttest{}`.
+* No examples write outside `tempdir()`. Every `\donttest{}` example
+  that touches the cache redirects via
+  `options(aieconindex.cache_dir = tempdir())` first and restores via
+  `options(op)` after.
+* `tests/testthat/setup.R` redirects the cache option to a sub-directory
+  of `tempdir()` for the entire test session, as belt-and-braces.
 * All network-dependent tests skip on CRAN via `skip_on_cran()` and
   `skip_if_offline()`.
-* All network-dependent examples are wrapped in `\donttest{}` (or
-  `\dontrun{}` for the one example whose data layout depends on the
-  release in non-deterministic ways).
+* No `\dontrun{}` in any example.
 * The package contacts only `huggingface.co` (the dataset host) and
   uses no API key; the dataset is fully public.
 
@@ -60,4 +58,5 @@ The DESCRIPTION mentions several proper nouns that lintr / `aspell`
 will flag: "Anthropic", "Hugging Face", "Claude", "O*NET", "Clio".
 These are the actual names of the dataset, host, model family,
 taxonomy, and underlying classification system, all spelled as their
-respective owners spell them.
+respective owners spell them. `inst/WORDLIST` carries the full list
+of expected proper nouns and British English forms.

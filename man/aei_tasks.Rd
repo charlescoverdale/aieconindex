@@ -32,7 +32,9 @@ task identifiers can be joined back from
 }
 \examples{
 \donttest{
+op <- options(aieconindex.cache_dir = tempdir())
 aei_tasks("2025-03-27")
+options(op)
 }
 }
 \references{

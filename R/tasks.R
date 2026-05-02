@@ -32,7 +32,9 @@
 #' @export
 #' @examples
 #' \donttest{
+#' op <- options(aieconindex.cache_dir = tempdir())
 #' aei_tasks("2025-03-27")
+#' options(op)
 #' }
 aei_tasks <- function(release = "2025-03-27", use_cache = TRUE) {
   release_id <- .aei_resolve_release(release)

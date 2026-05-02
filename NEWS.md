@@ -1,40 +1,51 @@
-# aieconindex 0.2.0
+# aieconindex 0.1.0
 
-## New analysis functions
+Initial release.
+
+## Discovery and download
+
+* `aei_releases()` lists available Anthropic Economic Index releases on
+  Hugging Face, blending bundled metadata with a live listing.
+* `aei_files()` returns the recursive file tree of a release.
+* `aei_index()` fetches the canonical usage CSV for a release, handling
+  the wide-to-long schema change between the 2025-03-27 and 2025-09-15
+  releases automatically.
+* `aei_download()` is the lower-level escape hatch for fetching any
+  file from a release by path.
+
+## Structured access
+
+* `aei_clusters()` returns the request-hierarchy tree (Clio output) as
+  a parsed nested list. Released from 2025-09-15 onwards.
+* `aei_tasks()` returns the bundled O*NET task statements (released
+  with the 2025-03-27 snapshot).
+* `aei_geography()` filters the long-format enriched table to country
+  or US-state rows. Released from 2025-09-15 onwards.
+
+## Analysis
 
 * `aei_compare()` produces a release-on-release diff of the same metric
   across two AEI snapshots, returning shared keys plus `value_a`,
-  `value_b`, `delta`, and `pct_change`. Designed for the long-format
-  schema introduced in the 2025-09-15 release.
+  `value_b`, `delta`, and `pct_change`.
 * `aei_link()` is a generic merge helper that preserves the `aei_tbl`
   class and provenance metadata. Use it to splice the AEI to your own
-  data on a shared key (country code, occupational identifier,
-  release-stable cluster name, etc.). Supports left, inner, and full
-  joins; warns when a join returns zero rows.
-* `aei_concentration()` computes Herfindahl-Hirschman Index, top-N
+  data on a shared key (country code, occupational identifier, cluster
+  name, etc.). Supports left, inner, and full joins.
+* `aei_concentration()` computes the Herfindahl-Hirschman Index, top-N
   concentration ratios (CR4 by default), and Shannon entropy on a
-  vector of usage shares. Auto-detects the share column from
-  long-format AEI tables (`value`) or wide-format (`pct`). Optional
-  `group_cols` argument computes metrics within groups.
+  vector of usage shares. Auto-detects the share column and supports
+  per-group computation.
 
-## Documentation
+## Reproducibility
 
-* README rewritten with a plain-language background section explaining
-  what the AEI is, how it came about, what the data covers, what gaps
-  in R-side tooling motivated the package, and how the design choices
-  (O*NET taxonomy, Clio privacy classification, augmentation vs
-  automation) affect interpretation.
-* Companion R Journal-style paper added under `paper/rj/` with three
-  real-data figures generated via the package itself.
+* `aei_cite()` returns a citation in plain text, BibTeX, or `bibentry`
+  form, including the methodological source paper of Handa et al.
+  (2025) by default.
+* `aei_cache_info()`, `aei_cache_clear()`, and `aei_cache_dir()` manage
+  the local data cache.
 
-# aieconindex 0.1.0
+## S3 class
 
-* Initial release.
-* `aei_releases()` lists available Anthropic Economic Index releases on Hugging Face.
-* `aei_index()` fetches raw or enriched usage tables for a release.
-* `aei_clusters()` returns the request-hierarchy tree (cluster names and descriptions).
-* `aei_tasks()` returns O*NET task statements for a release.
-* `aei_geography()` returns country-level usage breakdowns (release dependent).
-* `aei_cite()` returns BibTeX or plain-text citations for the dataset and a release.
-* `aei_cache_info()` and `aei_cache_clear()` manage the local data cache.
-* `aei_tbl` S3 class with `print`, `summary`, and `[` methods, carrying provenance attributes.
+* `aei_tbl` class with `print`, `summary`, and `[` methods that
+  preserve the `aei_query` provenance attribute (release id, source
+  URL, fetch timestamp) across subsetting.

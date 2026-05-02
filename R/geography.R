@@ -42,10 +42,10 @@
 #' @export
 #' @examples
 #' \donttest{
+#' op <- options(aieconindex.cache_dir = tempdir())
 #' uk <- aei_geography("2025-09-15", country = "GBR")
 #' head(uk)
-#' au <- aei_geography("2025-09-15", country = "AUS")
-#' us_states <- aei_geography("2025-09-15", geography = "state_us")
+#' options(op)
 #' }
 aei_geography <- function(release = "2025-09-15",
                           source = c("claude_ai", "1p_api"),

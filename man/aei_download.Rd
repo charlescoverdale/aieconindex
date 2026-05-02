@@ -37,8 +37,9 @@ they like with the file.
 }
 \examples{
 \donttest{
+op <- options(aieconindex.cache_dir = tempdir())
 aei_download("2025-03-27", "task_pct_v2.csv")
-aei_download("2025-09-15", "data/output/request_hierarchy_tree_claude_ai.json")
+options(op)
 }
 }
 \seealso{

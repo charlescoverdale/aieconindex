@@ -2,6 +2,7 @@
 
 > Tidy R access to the Anthropic Economic Index dataset.
 
+[![CRAN status](https://www.r-pkg.org/badges/version/aieconindex)](https://CRAN.R-project.org/package=aieconindex)
 [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Data: CC-BY 4.0](https://img.shields.io/badge/data-CC--BY%204.0-blue.svg)](https://creativecommons.org/licenses/by/4.0/)

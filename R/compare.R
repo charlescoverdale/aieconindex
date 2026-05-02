@@ -45,9 +45,10 @@
 #' @export
 #' @examples
 #' \donttest{
-#' # Has the share of coding tasks grown between Sept 2025 and Mar 2026?
+#' op <- options(aieconindex.cache_dir = tempdir())
 #' diff <- aei_compare("2025-09-15", "2026-03-24")
 #' head(diff[order(-abs(diff$delta)), ])
+#' options(op)
 #' }
 aei_compare <- function(release_a, release_b,
                         source = c("claude_ai", "1p_api"),
