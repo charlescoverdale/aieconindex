@@ -3,8 +3,8 @@ Title: Access the 'Anthropic Economic Index' Dataset
 Version: 0.1.0
 Authors@R: person("Charles", "Coverdale", email = "charlesfcoverdale@gmail.com", role = c("aut", "cre"))
 Description: Provides clean, tidy access to the 'Anthropic Economic Index'
-    ('AEI') dataset hosted on 'Hugging Face'
-    <https://huggingface.co/datasets/Anthropic/EconomicIndex>. The 'AEI'
+    (AEI) dataset hosted on 'Hugging Face'
+    <https://huggingface.co/datasets/Anthropic/EconomicIndex>. The AEI
     is a recurring release from 'Anthropic' that maps usage of the
     'Claude' family of large language models to occupations and tasks
     using the 'O*NET' taxonomy and the 'Standard Occupational
@@ -15,11 +15,11 @@ Description: Provides clean, tidy access to the 'Anthropic Economic Index'
     statements, request hierarchies, and country-level breakdowns,
     compare two releases, join the index to user-supplied data on a
     shared key, and compute usage-concentration metrics
-    ('Herfindahl-Hirschman Index', top-N concentration ratios, 'Shannon'
+    (Herfindahl-Hirschman Index, top-N concentration ratios, Shannon
     entropy). Data is cached locally for subsequent calls.
     Reproducibility helpers produce 'BibTeX' or plain-text citations
     that include the methodological source paper. This product uses the
-    'Anthropic Economic Index' data (released under 'CC-BY' by
+    'Anthropic Economic Index' data (released under CC-BY by
     'Anthropic') but is not endorsed or certified by 'Anthropic'.
 License: MIT + file LICENSE
 Encoding: UTF-8
