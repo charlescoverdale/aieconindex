@@ -354,6 +354,15 @@ The Hugging Face Python `datasets` library can also load the dataset (`datasets.
 - [Standard Occupational Classification](https://www.bls.gov/soc/) — the U.S. Bureau of Labor Statistics' occupational classification system.
 - [Anthropic Economic Futures](https://www.anthropic.com/economic-futures) — Anthropic's broader economic research programme.
 
+## Related packages
+
+| Package | Description |
+|---|---|
+| [`inequality`](https://github.com/charlescoverdale/inequality) | Inequality and poverty measurement (labour-market distributional context) |
+| [`ons`](https://github.com/charlescoverdale/ons) | UK labour market data (employment, wages by occupation) |
+| [`fred`](https://github.com/charlescoverdale/fred) | US labour market data (employment, productivity, occupational wages) |
+| [`readoecd`](https://github.com/charlescoverdale/readoecd) | OECD international labour and skills data |
+
 ## Citation
 
 Please cite both the package and the underlying dataset.
