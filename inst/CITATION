@@ -4,8 +4,8 @@ bibentry(
   bibtype = "Manual",
   title   = "aieconindex: Access the Anthropic Economic Index Dataset",
   author  = person("Charles", "Coverdale"),
-  year    = format(Sys.Date(), "%Y"),
-  note    = sprintf("R package version %s", utils::packageVersion("aieconindex")),
+  year    = sub("-.*", "", meta$Date %||% format(Sys.Date(), "%Y-%m-%d")),
+  note    = sprintf("R package version %s", meta$Version),
   url     = "https://github.com/charlescoverdale/aieconindex"
 )
 

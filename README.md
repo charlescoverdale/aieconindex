@@ -23,7 +23,7 @@ The data is open, the methodology is documented, and Anthropic ships replication
 
 `aieconindex` is the R-side answer to those gaps. It lists releases, fetches the raw and enriched usage tables, retrieves task statements and request hierarchies, exposes country and US-state slices through a single function, caches downloads locally, and produces ready-made citations that include the methodological source paper by default. Schema differences across releases are handled internally; pinning a release id keeps downstream pipelines reproducible. No API key is required. Three runtime dependencies (`cli`, `httr2`, `jsonlite`) plus base R.
 
-A companion paper (R Journal style) lives under [`paper/rj/`](paper/rj/) in this repo.
+A companion paper (R Journal style) lives under [`paper/rj/`](https://github.com/charlescoverdale/aieconindex/tree/main/paper/rj) in this repo.
 
 ## Table of contents
 

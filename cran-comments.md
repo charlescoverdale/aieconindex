@@ -1,11 +1,27 @@
 # aieconindex 0.1.0
 
-This is a new submission.
+Resubmission (same version) following pre-test feedback from Uwe Ligges
+on 2026-05-10. Four issues from the pre-test NOTE addressed:
+
+1. **CITATION file fails when package is not installed** — the original
+   `inst/CITATION` used `utils::packageVersion("aieconindex")` which
+   only resolves after installation. Replaced with the
+   CRAN-recommended pattern using `meta$Version` from the
+   `tools::readCitationFile` context.
+2. **Invalid file URI in README** (`paper/rj/`) — replaced the
+   relative-path link with the absolute GitHub URL so CRAN's URL
+   checker can resolve it.
+3. **arXiv references in the Description field** — switched both
+   citations from the deprecated `<arXiv:YYMM.NNNNN>` format to the
+   CRAN-current `<doi:10.48550/arXiv.YYMM.NNNNN>` format.
+4. **Possibly misspelled words list** updated below.
+
+Per CRAN policy for pre-acceptance resubmissions, version remains
+0.1.0. NEWS.md is unchanged.
 
 ## Test environments
 
 * Local: macOS 14.x (arm64), R 4.5.2 — 0 errors, 0 warnings, 0 notes
-* win-builder R-devel — submitted 2026-04-29
 * GitHub Actions CI: to be added
 
 ## R CMD check results
@@ -19,10 +35,7 @@ hosted on Hugging Face <https://huggingface.co/datasets/Anthropic/EconomicIndex>
 The AEI is a recurring open dataset (CC-BY-4.0) released by Anthropic
 that maps usage of the Claude family of large language models to
 occupations and tasks using the U.S. O*NET taxonomy and the Standard
-Occupational Classification system. The methodology is documented in
-Handa et al. (2025) <arXiv:2503.04761>; the privacy-preserving Clio
-classification system is described in Tamkin et al. (2024)
-<arXiv:2412.13678>.
+Occupational Classification system.
 
 The package follows the same architecture as several other CRAN
 packages by the same author that wrap a single open dataset
@@ -54,9 +67,20 @@ in the README.
 
 ## Possibly misspelled words
 
-The DESCRIPTION mentions several proper nouns that lintr / `aspell`
-will flag: "Anthropic", "Hugging Face", "Claude", "O*NET", "Clio".
-These are the actual names of the dataset, host, model family,
-taxonomy, and underlying classification system, all spelled as their
-respective owners spell them. `inst/WORDLIST` carries the full list
-of expected proper nouns and British English forms.
+The DESCRIPTION mentions several proper nouns, acronyms, and citation
+particles that lintr / `aspell` will flag, all of which are intentional
+and correctly spelled:
+
+* **Anthropic** — the company that releases the dataset
+* **Hugging Face** — the platform that hosts the dataset
+* **Claude** — the large language model family
+* **O*NET** — U.S. Department of Labor's task taxonomy
+* **Clio** — Anthropic's privacy-preserving classification system
+* **AEI** — short form of Anthropic Economic Index
+* **Handa**, **Tamkin** — first authors of the cited papers
+* **Herfindahl**, **Hirschman** — the surnames in the
+  Herfindahl-Hirschman Index, named after Albert O. Hirschman and
+  Orris C. Herfindahl
+* **et**, **al** — components of the standard "et al." citation form
+
+`inst/WORDLIST` carries the full list.
