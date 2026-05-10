@@ -14,3 +14,5 @@
 ^CITATION\.cff$
 ^paper$
 ^Makefile$
+^.*\.bak[0-9]*$
+^DESCRIPTION\.bak.*$
