@@ -40,7 +40,6 @@ A companion paper (R Journal style) lives under [`paper/rj/`](https://github.com
 - [Releases covered](#releases-covered)
 - [Caching](#caching)
 - [Relationship to the Anthropic Python notebooks](#relationship-to-the-anthropic-python-notebooks)
-- [Limitations](#limitations)
 - [Related work](#related-work)
 - [Citation](#citation)
 - [Contributing](#contributing)
@@ -328,17 +327,6 @@ Anthropic ships its own replication code as Jupyter notebooks (Python) inside se
 `aieconindex` is a complement to that workflow, not a port. The package gives you typed, cached, R-side access to the same source CSVs and JSONs, leaving downstream analysis to you. If you want to reproduce a specific Anthropic figure, the notebook is the most reliable starting point. If you want to feed AEI data into an existing R pipeline (joining with ONS Labour Force Survey, BLS OEWS, or ABS Labour Force data; weighting by national working-age employment), this package is the most direct route.
 
 The Hugging Face Python `datasets` library can also load the dataset (`datasets.load_dataset("Anthropic/EconomicIndex")`); `aieconindex` is the R-side equivalent for that workflow.
-
-## Limitations
-
-1. **Coverage bias.** AEI usage data reflects who uses Claude. The user base skews toward English speakers, knowledge workers, and software developers; the dataset is not a labour-force-representative sample of any economy.
-2. **Proprietary measurement.** The Clio classification pipeline that produces the cluster hierarchies is Anthropic's. Users cannot independently audit the cluster assignments beyond what is described in [Tamkin et al. (2024)](https://arxiv.org/abs/2412.13678).
-3. **Cross-release comparability is not automatic.** Both the underlying Claude model (3.5 Sonnet through Opus 4.5/4.6) and the Clio version change between releases. Pipelines that compare two releases should treat the comparison as model-version-dependent. See each release's `data_documentation.md` for the authoritative caveat list.
-4. **Schema drift across releases.** The AEI restructured its directory layout between 2025-03-27 and 2025-09-15, moving from wide-format release-root CSVs to a long-format `data/output/` layout. `aei_index()` and `aei_geography()` paper over this with file-pattern heuristics. If Anthropic restructures again, the heuristics will break and the package will need an update.
-5. **Network-dependent.** Almost every function fetches from Hugging Face on first call. Downstream analysis pipelines should pin a release id rather than `"latest"` to remain reproducible across re-runs.
-6. **Large downloads.** Latest releases ship usage CSVs of ~100 MB each. The cache (default location: `tools::R_user_dir("aieconindex", "cache")`) avoids re-downloading, but the first call to a new release is bandwidth-heavy.
-7. **Geographic data only from 2025-09-15.** Earlier releases do not contain geographic facets.
-8. **Standalone task statements only in 2025-03-27.** Later releases reference O*NET implicitly through the enriched index file rather than redistributing the statements.
 
 ## Related work
 
