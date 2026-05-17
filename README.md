@@ -2,10 +2,7 @@
 
 > Tidy R access to the Anthropic Economic Index dataset.
 
-[![CRAN status](https://www.r-pkg.org/badges/version/aieconindex)](https://CRAN.R-project.org/package=aieconindex)
-[![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Data: CC-BY 4.0](https://img.shields.io/badge/data-CC--BY%204.0-blue.svg)](https://creativecommons.org/licenses/by/4.0/)
+[![CRAN status](https://www.r-pkg.org/badges/version/aieconindex)](https://CRAN.R-project.org/package=aieconindex) [![CRAN downloads](https://cranlogs.r-pkg.org/badges/aieconindex)](https://cran.r-project.org/package=aieconindex) [![Total Downloads](https://cranlogs.r-pkg.org/badges/grand-total/aieconindex)](https://CRAN.R-project.org/package=aieconindex) [![Lifecycle: stable](https://img.shields.io/badge/lifecycle-stable-brightgreen.svg)](https://lifecycle.r-lib.org/articles/stages.html#stable) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT) [![Data: CC-BY 4.0](https://img.shields.io/badge/data-CC--BY%204.0-blue.svg)](https://creativecommons.org/licenses/by/4.0/)
 
 ## Background
 
