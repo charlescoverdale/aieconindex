@@ -6,28 +6,15 @@
 
 ## Background
 
-In early 2025 Anthropic published a new kind of economic dataset. Until then, almost everything we knew about how AI was actually being used in the economy came from one of two places: surveys (asking people what they used AI for) or indirect proxies (working out which jobs theoretically had the most AI-exposed tasks, and assuming usage followed exposure). The [Anthropic Economic Index](https://www.anthropic.com/economic-index) (AEI) took a more direct approach. Anthropic took millions of real Claude conversations, classified each one against the U.S. Department of Labor's [O*NET](https://www.onetonline.org/) task taxonomy and its [Standard Occupational Classification](https://www.bls.gov/soc/) system, and reported the resulting usage shares as open data. The methodology is documented in [Handa et al. (2025)](https://arxiv.org/abs/2503.04761). The privacy-preserving system that does the classification, in which Claude itself summarises other Claude conversations under tight rules, is described in [Tamkin et al. (2024)](https://arxiv.org/abs/2412.13678).
+The [Anthropic Economic Index](https://www.anthropic.com/economic-index) (AEI) is a recurring open dataset that maps real Claude conversations to occupations and tasks. Anthropic classifies millions of conversations against the U.S. Department of Labor's [O*NET](https://www.onetonline.org/) task taxonomy and the [Standard Occupational Classification](https://www.bls.gov/soc/) system, and publishes the resulting usage shares on [Hugging Face](https://huggingface.co/datasets/Anthropic/EconomicIndex) under CC-BY-4.0. Each release also splits conversations into automation-style interactions (the user delegates to Claude) and augmentation-style interactions (the user works through a task with Claude). From the September 2025 release onwards, the data is broken down by country and US state. Methodology is documented in [Handa et al. (2025)](https://arxiv.org/abs/2503.04761); the privacy-preserving classification pipeline is described in [Tamkin et al. (2024)](https://arxiv.org/abs/2412.13678).
 
-The dataset is published on [Hugging Face](https://huggingface.co/datasets/Anthropic/EconomicIndex) as a recurring set of snapshots, all released under CC-BY-4.0. Five releases have shipped between February 2025 and March 2026, covering Claude 3.5 Sonnet through Opus 4.5/4.6. Each release reports, for the time window it covers, the share of classified conversations that mapped to each O*NET task and each SOC occupational group, plus a split between automation-style interactions (where the user delegates a task to Claude) and augmentation-style interactions (where the user works through a task with Claude). From the September 2025 release onwards, the data is also broken down by country and US state, and a hierarchical clustering of request types produced by Clio is shipped as JSON. From the January 2026 release onwards, a set of derived "economic primitives" sit alongside the raw shares.
-
-The data is open, the methodology is documented, and Anthropic ships replication notebooks alongside each release. But for anyone working in R, the dataset was inconvenient to use:
-
-- The replication notebooks are Python only. There was no R wrapper.
-- The directory layout changed between the March 2025 and September 2025 releases, moving from wide-format release-root CSVs to a long-format `data/output/` layout. Code written for one release would silently break on the next.
-- There were no off-the-shelf helpers for the analyses people actually wanted: pulling out a single country, ranking O*NET tasks by share, comparing two releases. Every analysis started from raw CSV wrangling.
-- Citation was scattered. The methodological source paper (Handa et al. 2025), the Clio paper (Tamkin et al. 2024), and the per-release report PDFs all lived in different places.
-- There was no bridge from AEI usage shares to national labour statistics. Anyone wanting to weight AEI shares by working-age employment from the UK Office for National Statistics, the U.S. Bureau of Labor Statistics OEWS, or the Australian Bureau of Statistics Labour Force survey had to assemble their own crosswalks.
-
-`aieconindex` is the R-side answer to those gaps. It lists releases, fetches the raw and enriched usage tables, retrieves task statements and request hierarchies, exposes country and US-state slices through a single function, caches downloads locally, and produces ready-made citations that include the methodological source paper by default. Schema differences across releases are handled internally; pinning a release id keeps downstream pipelines reproducible. No API key is required. Three runtime dependencies (`cli`, `httr2`, `jsonlite`) plus base R.
-
-A companion paper (R Journal style) lives under [`paper/rj/`](https://github.com/charlescoverdale/aieconindex/tree/main/paper/rj) in this repo.
+Five releases have shipped between February 2025 and March 2026, covering Claude 3.5 Sonnet through Opus 4.5/4.6. `aieconindex` lists releases, fetches raw and enriched usage tables, retrieves task statements and request hierarchies, exposes country and US-state slices, caches downloads, and produces ready-made citations. Schema differences across releases are handled internally. Three runtime dependencies (`cli`, `httr2`, `jsonlite`) plus base R. No API key needed.
 
 ## Table of contents
 
 - [Background](#background)
 - [Installation](#installation)
 - [Quick start](#quick-start)
-- [Three design choices worth knowing](#three-design-choices-worth-knowing)
 - [Function reference](#function-reference)
   - [Discovery](#discovery)
   - [Download](#download)
@@ -47,16 +34,15 @@ A companion paper (R Journal style) lives under [`paper/rj/`](https://github.com
 
 ## Installation
 
-From GitHub (development version):
-
 ```r
+install.packages("aieconindex")
+
+# or the development version
 # install.packages("remotes")
 remotes::install_github("charlescoverdale/aieconindex")
 ```
 
-CRAN release: planned.
-
-The package is pure R with three runtime dependencies (`cli`, `httr2`, `jsonlite`) and the base `tools`, `stats`, and `utils` packages. R 4.1.0 or later is required. No API key is needed.
+R 4.1.0 or later.
 
 ## Quick start
 
@@ -87,12 +73,6 @@ uk <- aei_geography("2025-09-15", country = "GBR")
 aei_cite("2025-09-15", format = "bibtex")
 ```
 
-## Three design choices worth knowing
-
-1. **Task taxonomy.** Each Claude conversation is classified against the [O*NET task statements](https://www.onetonline.org/), the same task descriptions used by the U.S. Department of Labor and by the AI exposure literature ([Felten, Raj, and Seamans 2021](https://doi.org/10.1002/smj.3286); [Acemoglu and Restrepo 2020](https://doi.org/10.1086/705716)). This makes AEI directly comparable to existing exposure measures.
-2. **Privacy-preserving classification.** Classification runs through [Clio](https://arxiv.org/abs/2412.13678). Cluster summaries that fail Clio's privacy checks (low cell counts, identifying information) are dropped before publication. Users see only aggregated counts and shares, never raw conversations.
-3. **Augmentation versus automation.** Conversations are tagged with one of six interaction types: directive, feedback loop, task iteration, learning, validation, or none. Following [Handa et al. (2025)](https://arxiv.org/abs/2503.04761), directive and feedback-loop interactions are read as automation; task iteration, learning, and validation as augmentation.
-
 ## Function reference
 
 ### Discovery
@@ -115,10 +95,10 @@ aei_files("2025-03-27", recursive = FALSE)  # top-level only
 | `aei_index(release, source, variant)` | Canonical usage table as an `aei_tbl` |
 | `aei_download(release, path)` | CSVs as `aei_tbl`, JSON as parsed list, other extensions as local path |
 
-`aei_index()` is a convenience wrapper that locates the canonical usage CSV by file-pattern matching (the AEI naming convention has shifted across releases). Arguments:
+`aei_index()` locates the canonical usage CSV by file-pattern matching. Arguments:
 
-- `source` is one of `"claude_ai"` (Claude.ai consumer product traffic) or `"1p_api"` (first-party API traffic). Not all releases include both.
-- `variant` is one of `"raw"` (counts and percentages straight from Anthropic's pipeline) or `"enriched"` (joined to O*NET / SOC metadata, with derived per-capita and tier metrics). Older releases may only ship one variant.
+- `source`: `"claude_ai"` (consumer product traffic) or `"1p_api"` (first-party API). Not all releases include both.
+- `variant`: `"raw"` (counts and percentages from Anthropic's pipeline) or `"enriched"` (joined to O*NET / SOC metadata, with derived per-capita and tier metrics). Older releases may only ship one variant.
 
 ```r
 df_raw      <- aei_index("2026-03-24", source = "claude_ai", variant = "raw")
@@ -126,7 +106,7 @@ df_enriched <- aei_index("2025-09-15", source = "claude_ai", variant = "enriched
 df_api      <- aei_index("2026-03-24", source = "1p_api",    variant = "raw")
 ```
 
-`aei_download()` is the lower-level escape hatch. Pass any path returned by `aei_files()`:
+`aei_download()` fetches any path returned by `aei_files()`:
 
 ```r
 soc       <- aei_download("2025-03-27", "SOC_Structure.csv")
@@ -160,7 +140,7 @@ au <- aei_geography("2025-09-15", country = "AUS")
 us_states <- aei_geography("2025-09-15", geography = "state_us")
 ```
 
-`aei_geography()` filters the enriched long-format table on the `geography` column. Country codes are ISO-3 in the enriched data (`"GBR"`, `"AUS"`, `"USA"`). Releases before 2025-09-15 do not contain geographic data and the function errors informatively.
+Country codes are ISO-3 (`"GBR"`, `"AUS"`, `"USA"`). Releases before 2025-09-15 have no geographic data; the function errors informatively.
 
 ### Analysis
 
@@ -188,7 +168,7 @@ uk_tasks <- uk[uk$facet == "onet_task" & uk$variable == "onet_task_pct", ]
 aei_concentration(uk_tasks)
 ```
 
-`aei_link()` is the entry point for "bring your own data" workflows. It's a thin wrapper over `base::merge()` that preserves the `aei_tbl` class and provenance metadata, supports left / inner / full joins, and warns when a join produces zero rows. Use it to link the AEI to occupational crosswalks (SOC ↔ ANZSCO ↔ ISCO ↔ SOC2020 UK), to national labour-force survey data (ONS, BLS OEWS, ABS), or to any other external table keyed on country code or task identifier.
+`aei_link()` is a thin wrapper over `base::merge()` that preserves the `aei_tbl` class and provenance metadata, supports left / inner / full joins, and warns when a join produces zero rows. Use it to attach occupational crosswalks (SOC, ANZSCO, ISCO, SOC2020 UK), national labour-force data (ONS, BLS OEWS, ABS), or anything else keyed on country code or task identifier.
 
 ### Reproducibility
 
@@ -196,7 +176,7 @@ aei_concentration(uk_tasks)
 |---|---|
 | `aei_cite(release, format, method = TRUE)` | Citation in plain text, BibTeX, or `bibentry` form |
 
-By default `aei_cite()` includes the methodological source paper of [Handa et al. (2025)](https://arxiv.org/abs/2503.04761) alongside the dataset citation, because attribution under the dataset's CC-BY licence is required for any redistribution. Set `method = FALSE` to return only the dataset citation.
+By default `aei_cite()` returns both the dataset citation and [Handa et al. (2025)](https://arxiv.org/abs/2503.04761). Set `method = FALSE` for the dataset only.
 
 ```r
 aei_cite()                                         # text, project-wide, with paper
@@ -322,22 +302,18 @@ The latest release usage CSVs are around 100 MB each, so the first call to a fre
 
 ## Relationship to the Anthropic Python notebooks
 
-Anthropic ships its own replication code as Jupyter notebooks (Python) inside several releases: for example, `release_2025_03_27/v2_report_replication.ipynb` reproduces the figures in the corresponding report PDF.
-
-`aieconindex` is a complement to that workflow, not a port. The package gives you typed, cached, R-side access to the same source CSVs and JSONs, leaving downstream analysis to you. If you want to reproduce a specific Anthropic figure, the notebook is the most reliable starting point. If you want to feed AEI data into an existing R pipeline (joining with ONS Labour Force Survey, BLS OEWS, or ABS Labour Force data; weighting by national working-age employment), this package is the most direct route.
-
-The Hugging Face Python `datasets` library can also load the dataset (`datasets.load_dataset("Anthropic/EconomicIndex")`); `aieconindex` is the R-side equivalent for that workflow.
+Anthropic ships its own replication code as Jupyter notebooks inside several releases (e.g. `release_2025_03_27/v2_report_replication.ipynb`). For exact figure replication, use those. `aieconindex` is the R-side equivalent of Hugging Face's Python `datasets` loader: typed, cached access to the same source files, with downstream analysis left to you.
 
 ## Related work
 
-- [Anthropic/EconomicIndex on Hugging Face](https://huggingface.co/datasets/Anthropic/EconomicIndex) — the upstream dataset.
-- [Handa et al. (2025), arXiv:2503.04761](https://arxiv.org/abs/2503.04761) — the methodological source paper.
-- [Tamkin et al. (2024), arXiv:2412.13678](https://arxiv.org/abs/2412.13678) — the Clio system paper.
-- [Felten, Raj, and Seamans (2021)](https://doi.org/10.1002/smj.3286) — the AI Occupational Exposure (AIOE) measure that uses the same O*NET task taxonomy.
-- [Acemoglu and Restrepo (2020)](https://doi.org/10.1086/705716) — the canonical automation-and-jobs paper that AEI's interaction-type framework references.
-- [O*NET Database](https://www.onetonline.org/) — the U.S. Department of Labor's task taxonomy.
-- [Standard Occupational Classification](https://www.bls.gov/soc/) — the U.S. Bureau of Labor Statistics' occupational classification system.
-- [Anthropic Economic Futures](https://www.anthropic.com/economic-futures) — Anthropic's broader economic research programme.
+- [Anthropic/EconomicIndex on Hugging Face](https://huggingface.co/datasets/Anthropic/EconomicIndex): the upstream dataset.
+- [Handa et al. (2025), arXiv:2503.04761](https://arxiv.org/abs/2503.04761): the methodological source paper.
+- [Tamkin et al. (2024), arXiv:2412.13678](https://arxiv.org/abs/2412.13678): the Clio system paper.
+- [Felten, Raj, and Seamans (2021)](https://doi.org/10.1002/smj.3286): the AI Occupational Exposure (AIOE) measure, on the same O*NET task taxonomy.
+- [Acemoglu and Restrepo (2020)](https://doi.org/10.1086/705716): the canonical automation-and-jobs paper referenced by AEI's interaction-type framework.
+- [O*NET Database](https://www.onetonline.org/): the U.S. Department of Labor's task taxonomy.
+- [Standard Occupational Classification](https://www.bls.gov/soc/): the U.S. Bureau of Labor Statistics' occupational classification system.
+- [Anthropic Economic Futures](https://www.anthropic.com/economic-futures): Anthropic's broader economic research programme.
 
 ## Related packages
 
@@ -350,19 +326,14 @@ The Hugging Face Python `datasets` library can also load the dataset (`datasets.
 
 ## Citation
 
-Please cite both the package and the underlying dataset.
+Cite both the package and the underlying dataset:
 
 ```r
 citation("aieconindex")
-```
-
-For the dataset specifically, `aei_cite()` returns ready-made strings:
-
-```r
 aei_cite("2025-09-15", format = "bibtex")
 ```
 
-If you use the AEI in academic work, also cite [Handa et al. (2025), arXiv:2503.04761](https://arxiv.org/abs/2503.04761) — the methodological source paper. `aei_cite()` includes it by default.
+`aei_cite()` returns the dataset citation alongside [Handa et al. (2025)](https://arxiv.org/abs/2503.04761), the methodological source paper.
 
 ## Contributing
 
