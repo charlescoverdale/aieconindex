@@ -64,6 +64,7 @@ map them first with a small lookup table or with the
 }
 \examples{
 \donttest{
+op <- options(aieconindex.cache_dir = tempdir())
 # Join AEI country shares to a small external table of GDP per capita
 country <- aei_geography("2025-09-15")
 overlay <- data.frame(
@@ -72,6 +73,7 @@ overlay <- data.frame(
 )
 joined <- aei_link(country, overlay, by = "geo_id")
 head(joined)
+options(op)
 }
 }
 \seealso{

@@ -14,3 +14,8 @@ Returns the directory used to store downloaded AEI files. Defaults to
 \code{tools::R_user_dir("aieconindex", "cache")}. Override by setting
 \code{options(aieconindex.cache_dir = "/your/path")}.
 }
+\details{
+During an \verb{R CMD check} run (including \code{--run-donttest}) the cache is
+redirected to a session-temporary directory that R removes on exit,
+so checks never write to persistent storage.
+}

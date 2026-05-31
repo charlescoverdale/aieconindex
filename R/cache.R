@@ -1,7 +1,10 @@
 # Local cache management for aieconindex.
 #
 # Cached files live under tools::R_user_dir("aieconindex", "cache"). The
-# `aieconindex.cache_dir` option overrides this for testing.
+# `aieconindex.cache_dir` option overrides this for testing. During an
+# `R CMD check` run the cache is redirected to a session-temporary
+# directory so the package never leaves files in persistent storage
+# while CRAN checks it (CRAN Repository Policy).
 
 #' Locate the aieconindex cache directory
 #'
@@ -9,11 +12,23 @@
 #' `tools::R_user_dir("aieconindex", "cache")`. Override by setting
 #' `options(aieconindex.cache_dir = "/your/path")`.
 #'
+#' During an `R CMD check` run (including `--run-donttest`) the cache is
+#' redirected to a session-temporary directory that R removes on exit,
+#' so checks never write to persistent storage.
+#'
 #' @return A character string giving the absolute path.
 #' @export
 aei_cache_dir <- function() {
   override <- getOption("aieconindex.cache_dir")
-  if (!is.null(override) && nzchar(override)) return(normalizePath(override, mustWork = FALSE))
+  if (!is.null(override) && nzchar(override)) {
+    return(normalizePath(override, mustWork = FALSE))
+  }
+  # Under `R CMD check` never touch the persistent user cache: write to a
+  # session-temporary directory that R removes on exit. CRAN policy
+  # forbids leaving files outside tempdir() once a check completes.
+  if (nzchar(Sys.getenv("_R_CHECK_PACKAGE_NAME_"))) {
+    return(file.path(tempdir(), "aieconindex-cache"))
+  }
   tools::R_user_dir("aieconindex", "cache")
 }
 

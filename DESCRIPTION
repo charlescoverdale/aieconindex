@@ -1,6 +1,6 @@
 Package: aieconindex
 Title: Access the 'Anthropic Economic Index' Dataset
-Version: 0.1.0
+Version: 0.1.1
 Authors@R: person("Charles", "Coverdale", email = "charlesfcoverdale@gmail.com", role = c("aut", "cre"))
 Description: Provides clean, tidy access to the 'Anthropic Economic Index'
     (AEI) dataset hosted on 'Hugging Face'

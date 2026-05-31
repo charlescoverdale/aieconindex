@@ -6,7 +6,7 @@
 
 ## Background
 
-The [Anthropic Economic Index](https://www.anthropic.com/economic-index) (AEI) is a recurring open dataset that maps real Claude conversations to occupations and tasks. Anthropic classifies millions of conversations against the U.S. Department of Labor's [O*NET](https://www.onetonline.org/) task taxonomy and the [Standard Occupational Classification](https://www.bls.gov/soc/) system, and publishes the resulting usage shares on [Hugging Face](https://huggingface.co/datasets/Anthropic/EconomicIndex) under CC-BY-4.0. Each release also splits conversations into automation-style interactions (the user delegates to Claude) and augmentation-style interactions (the user works through a task with Claude). From the September 2025 release onwards, the data is broken down by country and US state. Methodology is documented in [Handa et al. (2025)](https://arxiv.org/abs/2503.04761); the privacy-preserving classification pipeline is described in [Tamkin et al. (2024)](https://arxiv.org/abs/2412.13678).
+The [Anthropic Economic Index](https://www.anthropic.com/economic-index) (AEI) is a recurring open dataset that maps real Claude conversations to occupations and tasks. Anthropic classifies millions of conversations against the U.S. Department of Labor's [O*NET](https://www.onetonline.org/) task taxonomy and the Standard Occupational Classification (SOC) system, and publishes the resulting usage shares on [Hugging Face](https://huggingface.co/datasets/Anthropic/EconomicIndex) under CC-BY-4.0. Each release also splits conversations into automation-style interactions (the user delegates to Claude) and augmentation-style interactions (the user works through a task with Claude). From the September 2025 release onwards, the data is broken down by country and US state. Methodology is documented in [Handa et al. (2025)](https://arxiv.org/abs/2503.04761); the privacy-preserving classification pipeline is described in [Tamkin et al. (2024)](https://arxiv.org/abs/2412.13678).
 
 Five releases have shipped between February 2025 and March 2026, covering Claude 3.5 Sonnet through Opus 4.5/4.6. `aieconindex` lists releases, fetches raw and enriched usage tables, retrieves task statements and request hierarchies, exposes country and US-state slices, caches downloads, and produces ready-made citations. Schema differences across releases are handled internally. Three runtime dependencies (`cli`, `httr2`, `jsonlite`) plus base R. No API key needed.
 
@@ -312,7 +312,7 @@ Anthropic ships its own replication code as Jupyter notebooks inside several rel
 - [Felten, Raj, and Seamans (2021)](https://doi.org/10.1002/smj.3286): the AI Occupational Exposure (AIOE) measure, on the same O*NET task taxonomy.
 - [Acemoglu and Restrepo (2020)](https://doi.org/10.1086/705716): the canonical automation-and-jobs paper referenced by AEI's interaction-type framework.
 - [O*NET Database](https://www.onetonline.org/): the U.S. Department of Labor's task taxonomy.
-- [Standard Occupational Classification](https://www.bls.gov/soc/): the U.S. Bureau of Labor Statistics' occupational classification system.
+- Standard Occupational Classification (SOC): the U.S. Bureau of Labor Statistics' occupational classification system.
 - [Anthropic Economic Futures](https://www.anthropic.com/economic-futures): Anthropic's broader economic research programme.
 
 ## Related packages
@@ -352,6 +352,6 @@ This package is released under the [MIT License](LICENSE).
 
 The underlying Anthropic Economic Index dataset is released by Anthropic under [Creative Commons Attribution 4.0 International (CC-BY-4.0)](https://creativecommons.org/licenses/by/4.0/). When using this package to retrieve or redistribute that data, attribution to Anthropic and to [Handa et al. (2025)](https://arxiv.org/abs/2503.04761) is required. Use `aei_cite()` for ready-made citation strings.
 
-The bundled O*NET and SOC reference data (when accessed through the AEI) inherit their respective licences. See the [O*NET licensing page](https://www.onetonline.org/help/license) and the [SOC documentation](https://www.bls.gov/soc/).
+The bundled O*NET and SOC reference data (when accessed through the AEI) inherit their respective licences. See the [O*NET licensing page](https://www.onetonline.org/help/license) and the BLS Standard Occupational Classification documentation.
 
 This product uses the Anthropic Economic Index data but is not endorsed or certified by Anthropic.

@@ -37,7 +37,7 @@ U.S. Department of Labor, Employment and Training Administration.
 O*NET Database. \url{https://www.onetonline.org/}
 
 U.S. Bureau of Labor Statistics. Standard Occupational
-Classification. \url{https://www.bls.gov/soc/}
+Classification (SOC) System.
 }
 \seealso{
 Useful links:

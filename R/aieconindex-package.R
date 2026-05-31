@@ -30,7 +30,7 @@
 #' O*NET Database. \url{https://www.onetonline.org/}
 #'
 #' U.S. Bureau of Labor Statistics. Standard Occupational
-#' Classification. \url{https://www.bls.gov/soc/}
+#' Classification (SOC) System.
 #'
 #' @keywords internal
 "_PACKAGE"

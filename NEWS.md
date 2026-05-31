@@ -1,3 +1,21 @@
+# aieconindex 0.1.1
+
+CRAN maintenance release addressing a check-system issue raised by the
+CRAN team on 2026-05-31.
+
+* The `\donttest{}` example for `aei_link()` fetched a release file into
+  the persistent user cache (`tools::R_user_dir()`) rather than a
+  temporary directory, so it left data behind on the CRAN check
+  machines. The example now redirects the cache to `tempdir()`, matching
+  every other example in the package.
+* `aei_cache_dir()` now redirects to a session-temporary directory when
+  it detects an `R CMD check` run, so the package cannot write to
+  persistent storage during checks even if an example, test, or vignette
+  omits the redirect.
+* Removed the `bls.gov/soc/` reference link from the help page and
+  README. The page returns HTTP 403 to automated URL checkers; the
+  Standard Occupational Classification is still cited by name.
+
 # aieconindex 0.1.0
 
 Initial release.
