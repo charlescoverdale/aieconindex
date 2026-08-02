@@ -11,7 +11,7 @@
 #'   metadata. If `FALSE`, return the bundled list only.
 #'
 #' @return An [aei_tbl] with columns `release_id`, `release_date`,
-#'   `model`, and `notes`.
+#'   `model`, `report_url`, and `notes`.
 #'
 #' @family release discovery
 #' @export

@@ -22,7 +22,8 @@ releases include both.}
 \item{variant}{Character. Either \code{"raw"} (counts and percentages
 straight from Anthropic's pipeline) or \code{"enriched"} (joined to
 O*NET / SOC metadata, with derived per-capita and tier metrics).
-Older releases may only ship one variant.}
+Older releases may only ship one variant. Ignored for releases
+from 2026-06-26 onwards, which ship a single file per source.}
 
 \item{use_cache}{Logical. If \code{TRUE} (the default), use the local
 cache when present. If \code{FALSE}, force a fresh download.}
@@ -38,12 +39,14 @@ refactored its directory layout in late 2025); this function papers
 over that variation by matching against well-known filename patterns.
 }
 \details{
-File discovery uses the regular expression
-\verb{aei_<variant>_<source>.*\\.csv$} against the recursive file listing
-for a release. When more than one match exists (because a release
-may ship multiple date windows or revisions), the matches are
-sorted lexicographically descending and the first is used. Because
-the AEI uses ISO dates in filenames (e.g. \verb{_2026-02-05_to_2026-02-12}),
+File discovery matches well-known filename patterns against the
+recursive file listing for a release: releases up to 2026-03-24 use
+\verb{aei_<variant>_<source>.*\\.csv$}, and releases from 2026-06-26
+onwards use \verb{aei_<source>_<date>.csv} (the raw/enriched variant was
+dropped from filenames with the monthly schema). When more than one
+match exists (because a release may ship multiple date windows or
+revisions), the matches are sorted lexicographically descending and
+the first is used. Because the AEI uses ISO dates in filenames,
 lexicographic sort approximates "most recent date window" but is
 not guaranteed to be correct if Anthropic changes its filename
 convention. Use \code{\link[=aei_files]{aei_files()}} to inspect available files for a
@@ -54,9 +57,17 @@ Schema differs across releases:
 \itemize{
 \item Releases up to and including 2025-03-27 ship wide-format
 tables (one row per occupation/task, columns for shares).
-\item Releases from 2025-09-15 onward ship long-format tables
-(one row per geography-facet-variable combination, with
-a single \code{value} column).
+\item Releases from 2025-09-15 to 2026-03-24 ship long-format
+tables (one row per geography-facet-variable combination,
+with a single \code{value} column).
+\item Releases from 2026-06-26 onwards ship calendar-month
+aggregates (one row per date window, geography, category,
+and metric, with \code{geo_level}, \code{category_name},
+\code{hierarchy_level}, \code{metric_id}, \code{node_name}, and \code{value}
+columns). These releases ship a single file per source, so
+the \code{variant} argument is ignored. A release can contain
+more than one calendar month; filter on \code{date_start} if you
+need a single window.
 }
 See \code{data_documentation.md} in each release directory for the
 authoritative schema.
@@ -78,6 +89,7 @@ Other core data:
 \code{\link{aei_clusters}()},
 \code{\link{aei_download}()},
 \code{\link{aei_geography}()},
+\code{\link{aei_labor_market}()},
 \code{\link{aei_tasks}()}
 }
 \concept{core data}

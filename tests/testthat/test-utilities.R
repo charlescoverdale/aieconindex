@@ -40,3 +40,46 @@ test_that(".aei_format_bytes scales sensibly", {
   expect_match(aieconindex:::.aei_format_bytes(2 * 1024^2), "MB$")
   expect_match(aieconindex:::.aei_format_bytes(3 * 1024^3), "GB$")
 })
+
+test_that(".aei_release_id_date parses ids and returns NA otherwise", {
+  expect_equal(aieconindex:::.aei_release_id_date("release_2026_06_26"),
+               as.Date("2026-06-26"))
+  expect_true(is.na(aieconindex:::.aei_release_id_date("labor_market_impacts")))
+})
+
+test_that(".aei_release_schema classifies the three epochs", {
+  expect_equal(aieconindex:::.aei_release_schema("release_2025_02_10"), "wide")
+  expect_equal(aieconindex:::.aei_release_schema("release_2025_03_27"), "wide")
+  expect_equal(aieconindex:::.aei_release_schema("release_2025_09_15"), "long")
+  expect_equal(aieconindex:::.aei_release_schema("release_2026_03_24"), "long")
+  expect_equal(aieconindex:::.aei_release_schema("release_2026_06_26"), "monthly")
+  expect_equal(aieconindex:::.aei_release_schema("release_2026_09_30"), "monthly")
+  expect_equal(aieconindex:::.aei_release_schema("labor_market_impacts"), "unknown")
+})
+
+test_that(".aei_index_pattern matches the two filename conventions", {
+  long_pat <- aieconindex:::.aei_index_pattern("long", "raw", "claude_ai")
+  expect_true(grepl(long_pat, "data/aei_raw_claude_ai_2026-02-05_to_2026-02-12.csv"))
+  expect_false(grepl(long_pat, "data/aei_claude_ai_2026-06-26.csv"))
+  monthly_pat <- aieconindex:::.aei_index_pattern("monthly", "raw", "claude_ai")
+  expect_true(grepl(monthly_pat, "data/aei_claude_ai_2026-06-26.csv"))
+  expect_false(grepl(monthly_pat, "data/aei_raw_claude_ai_2026-02-05_to_2026-02-12.csv"))
+  monthly_api <- aieconindex:::.aei_index_pattern("monthly", "raw", "1p_api")
+  expect_true(grepl(monthly_api, "data/aei_1p_api_2026-06-26.csv"))
+  expect_false(grepl(monthly_api, "data/aei_claude_ai_2026-06-26.csv"))
+})
+
+test_that(".aei_resolve_release resolves post-build releases via the live listing", {
+  skip_on_cran()
+  skip_if_offline()
+  # Bypass the bundled table by pretending only the first release is known.
+  releases <- aieconindex:::.aei_known_releases[1L, , drop = FALSE]
+  expect_equal(
+    aieconindex:::.aei_resolve_release("2026-06-26", releases = releases),
+    "release_2026_06_26"
+  )
+  expect_equal(
+    aieconindex:::.aei_resolve_release("release_2026_06_26", releases = releases),
+    "release_2026_06_26"
+  )
+})

@@ -2,52 +2,62 @@
 % Please edit documentation in R/geography.R
 \name{aei_geography}
 \alias{aei_geography}
-\title{Filter the enriched usage table to country or US-state rows}
+\title{Filter the usage table to country or subregion rows}
 \usage{
 aei_geography(
-  release = "2025-09-15",
+  release = "latest",
   source = c("claude_ai", "1p_api"),
-  geography = c("country", "state_us"),
+  geography = c("country", "state_us", "subregion"),
   country = NULL,
   use_cache = TRUE
 )
 }
 \arguments{
-\item{release}{A release identifier. See \code{\link[=aei_files]{aei_files()}}.}
+\item{release}{A release identifier. See \code{\link[=aei_files]{aei_files()}}. Defaults to
+\code{"latest"}.}
 
 \item{source}{Character. Either \code{"claude_ai"} or \code{"1p_api"}. The 1P
-API release ships only \code{"global"} rows, so country filtering will
+API data ships only \code{"global"} rows, so country filtering will
 typically return nothing for that source.}
 
-\item{geography}{Character. Either \code{"country"} or \code{"state_us"}.}
+\item{geography}{Character. One of \code{"country"}, \code{"state_us"}, or
+\code{"subregion"}.}
 
-\item{country}{Optional ISO 3166-1 alpha-3 country code in the
-enriched data (for example \code{"GBR"}, \code{"AUS"}, \code{"USA"}). If \code{NULL}
-(the default), all countries are returned.}
+\item{country}{Optional ISO 3166-1 alpha-3 country code (for
+example \code{"GBR"}, \code{"AUS"}, \code{"USA"}). If \code{NULL} (the default), all
+rows at the requested level are returned.}
 
 \item{use_cache}{Logical. If \code{TRUE} (the default), use the local
 cache when present.}
 }
 \value{
-An \link{aei_tbl} containing the long-format geographic rows of
-the enriched usage table.
+An \link{aei_tbl} containing the geographic rows of the usage
+table.
 }
 \description{
 From the 2025-09-15 release onward the Anthropic Economic Index
-ships a single long-format enriched CSV with one row per
-geography-facet-variable combination. Geographic breakdowns are
-rows in that table where the \code{geography} column is \code{"country"} or
-\code{"state_us"}. This function fetches the enriched table via
-\code{\link[=aei_index]{aei_index()}} with \code{variant = "enriched"} and filters those rows.
+ships geographic breakdowns as rows of its main usage table. This
+function fetches that table via \code{\link[=aei_index]{aei_index()}} and filters it to the
+requested geographic level, optionally to a single country.
 }
 \details{
-The enriched table has columns \code{geo_id} (ISO-3 country code or US
-state code after enrichment), \code{geography} (one of \code{"country"},
-\code{"state_us"}, \code{"global"}), \code{facet}, \code{variable}, \code{cluster_name}, and
-\code{value}. Setting \code{country = "GBR"} or \code{country = "AUS"} filters to
-that single country; the codes are ISO-3 in the enriched data.
-Setting \code{geography = "state_us"} returns the US-state breakdown
-instead of the country breakdown.
+Two geographic schemas exist:
+\itemize{
+\item Releases from 2025-09-15 to 2026-03-24 (long format) carry a
+\code{geography} column with values \code{"country"}, \code{"state_us"},
+and \code{"global"}, plus a \code{geo_id} column holding ISO-3 country
+codes or US state codes.
+\item Releases from 2026-06-26 onwards (monthly format) carry a
+\code{geo_level} column with values \code{"country"}, \code{"subregion"},
+and \code{"global"}, plus a \code{geo_id} column holding ISO 3166-1
+alpha-3 country codes or ISO 3166-2 subregion codes (US
+states appear as \code{"US-CA"}, \code{"US-NY"}, and so on).
+}
+The \code{geography} argument is mapped onto whichever schema the release
+uses: \code{"country"} selects country rows in both; \code{"state_us"} selects
+\code{state_us} rows in the long schema and US subregion rows (\code{geo_id}
+starting \code{"US-"}) in the monthly schema; \code{"subregion"} selects all
+subregion rows and is only available from 2026-06-26 onwards.
 
 Releases before 2025-09-15 do not contain geographic data; calling
 \code{aei_geography()} on them returns an informative error.
@@ -70,6 +80,7 @@ Other core data:
 \code{\link{aei_clusters}()},
 \code{\link{aei_download}()},
 \code{\link{aei_index}()},
+\code{\link{aei_labor_market}()},
 \code{\link{aei_tasks}()}
 }
 \concept{core data}

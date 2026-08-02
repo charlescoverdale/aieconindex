@@ -50,6 +50,7 @@ Other core data:
 \code{\link{aei_clusters}()},
 \code{\link{aei_download}()},
 \code{\link{aei_geography}()},
-\code{\link{aei_index}()}
+\code{\link{aei_index}()},
+\code{\link{aei_labor_market}()}
 }
 \concept{core data}

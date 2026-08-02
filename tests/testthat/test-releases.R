@@ -22,3 +22,13 @@ test_that("aei_files lists files for a known release when network is available",
   expect_true("path" %in% names(out))
   expect_true(any(grepl("README\\.md$", out$path)))
 })
+
+test_that("the monthly filename pattern matches the 2026-06-26 release files (network)", {
+  skip_on_cran()
+  skip_if_offline()
+  files <- aei_files("2026-06-26", recursive = TRUE)
+  pat_ai <- aieconindex:::.aei_index_pattern("monthly", "raw", "claude_ai")
+  pat_api <- aieconindex:::.aei_index_pattern("monthly", "raw", "1p_api")
+  expect_true(any(grepl(pat_ai, files$path[files$type == "file"])))
+  expect_true(any(grepl(pat_api, files$path[files$type == "file"])))
+})

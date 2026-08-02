@@ -7,16 +7,23 @@
 #' @details
 #' The function fetches both releases via [aei_index()], inner-joins
 #' them on the columns in `by`, and returns one row per shared key
-#' with both values plus the absolute and percentage change. The
-#' default join keys (`cluster_name`, `facet`, `variable`) are the
-#' natural composite key of the long-format AEI schema introduced in
-#' the 2025-09-15 release. For comparisons that include geographic
+#' with both values plus the absolute and percentage change. When `by`
+#' is `NULL` (the default) the join keys are chosen from the columns
+#' the two tables share: `c("cluster_name", "facet", "variable")` for
+#' the long-format schema (2025-09-15 to 2026-03-24), or
+#' `c("geo_id", "geo_level", "category_name", "hierarchy_level",
+#' "metric_id", "node_name")` for the monthly schema (2026-06-26
+#' onwards). For long-format comparisons that include geographic
 #' breakdowns add `geo_id` and `geography` to `by`.
 #'
-#' Releases that ship in different schemas (the wide-format 2025-02-10
-#' and 2025-03-27 releases vs the long-format 2025-09-15+) cannot be
-#' compared directly. Use [aei_download()] and a hand-written join in
-#' that case.
+#' Monthly-schema releases can contain more than one calendar month.
+#' Before joining, each side is filtered to its most recent
+#' `date_start` window so that keys stay unique; a message reports the
+#' window used.
+#'
+#' Releases that ship in different schemas cannot be compared
+#' directly. Use [aei_download()] and a hand-written join in that
+#' case.
 #'
 #' Pct-change is calculated as `(value_b - value_a) / value_a * 100`
 #' and is `NA` where `value_a` is zero.
@@ -24,12 +31,12 @@
 #' @param release_a,release_b Release identifiers. See [aei_files()].
 #'   `release_a` is treated as the baseline.
 #' @param source Character. Either `"claude_ai"` or `"1p_api"`.
-#' @param variant Character. Either `"raw"` or `"enriched"`.
-#' @param by Character vector of join keys. Default is
-#'   `c("cluster_name", "facet", "variable")` for the long-format
-#'   schema. Add `c("geo_id", "geography")` to compare geography rows.
+#' @param variant Character. Either `"raw"` or `"enriched"`. Ignored
+#'   for monthly-schema releases (2026-06-26 onwards).
+#' @param by Character vector of join keys, or `NULL` (the default) to
+#'   choose them automatically from the schema both releases share.
 #' @param value_col Character. Name of the numeric column to compare.
-#'   Default `"value"` for long-format AEI tables.
+#'   Default `"value"`.
 #' @param use_cache Logical. If `TRUE` (the default), use the local
 #'   cache when present.
 #'
@@ -53,7 +60,7 @@
 aei_compare <- function(release_a, release_b,
                         source = c("claude_ai", "1p_api"),
                         variant = c("raw", "enriched"),
-                        by = c("cluster_name", "facet", "variable"),
+                        by = NULL,
                         value_col = "value",
                         use_cache = TRUE) {
   source  <- match.arg(source)
@@ -65,6 +72,11 @@ aei_compare <- function(release_a, release_b,
   }
   a <- aei_index(release_a_id, source = source, variant = variant, use_cache = use_cache)
   b <- aei_index(release_b_id, source = source, variant = variant, use_cache = use_cache)
+  a <- .aei_latest_window(a, release_a_id)
+  b <- .aei_latest_window(b, release_b_id)
+  if (is.null(by)) {
+    by <- .aei_compare_by(names(a), names(b))
+  }
   missing_a <- setdiff(c(by, value_col), names(a))
   missing_b <- setdiff(c(by, value_col), names(b))
   if (length(missing_a) || length(missing_b)) {
@@ -90,4 +102,34 @@ aei_compare <- function(release_a, release_b,
     facet      = paste(variant, source, sep = "/"),
     fetched_at = Sys.time()
   ))
+}
+
+# Pick default join keys from the columns both releases share. The two
+# candidate sets are the natural composite keys of the long-format and
+# monthly AEI schemas.
+.aei_compare_by <- function(names_a, names_b) {
+  monthly <- c("geo_id", "geo_level", "category_name",
+               "hierarchy_level", "metric_id", "node_name")
+  long <- c("cluster_name", "facet", "variable")
+  if (all(monthly %in% names_a) && all(monthly %in% names_b)) return(monthly)
+  if (all(long %in% names_a) && all(long %in% names_b)) return(long)
+  cli::cli_abort(c(
+    "Could not choose default join keys for these releases.",
+    "i" = "The releases may use different schemas, which cannot be compared directly.",
+    "i" = "Pass {.arg by} explicitly, or use {.fn aei_download} and a hand-written join."
+  ))
+}
+
+# Monthly-schema releases ship more than one calendar month in a single
+# file. Reduce to the most recent date window so that the composite key
+# is unique before joining.
+.aei_latest_window <- function(x, release_id = "?") {
+  if (!"date_start" %in% names(x)) return(x)
+  ds <- as.character(x$date_start)
+  latest <- max(ds, na.rm = TRUE)
+  if (!all(ds == latest, na.rm = TRUE)) {
+    cli::cli_inform("Release {.val {release_id}} ships multiple date windows; using {.val {latest}}.")
+    x <- x[!is.na(ds) & ds == latest, , drop = FALSE]
+  }
+  x
 }

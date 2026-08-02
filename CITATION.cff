@@ -11,8 +11,8 @@ authors:
   - family-names: "Coverdale"
     given-names: "Charles"
     email: "charlesfcoverdale@gmail.com"
-version: "0.1.1"
-date-released: "2026-05-31"
+version: "0.2.0"
+date-released: "2026-08-02"
 license: MIT
 repository-code: "https://github.com/charlescoverdale/aieconindex"
 references:

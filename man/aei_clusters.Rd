@@ -57,6 +57,7 @@ Other core data:
 \code{\link{aei_download}()},
 \code{\link{aei_geography}()},
 \code{\link{aei_index}()},
+\code{\link{aei_labor_market}()},
 \code{\link{aei_tasks}()}
 }
 \concept{core data}

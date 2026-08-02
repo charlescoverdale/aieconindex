@@ -10,18 +10,21 @@
 #' Three measures are produced for each call:
 #'
 #' \itemize{
-#'   \item \strong{HHI} = sum of squared shares. When shares are in
-#'     percentages (0 to 100), HHI ranges from 0 (perfect dispersion)
-#'     to 10,000 (one item holds all). When shares are in proportions
-#'     (0 to 1), HHI ranges from 0 to 1. The function detects the
-#'     scale automatically: if `max(share) > 1` the shares are treated
-#'     as percentages, otherwise as proportions.
+#'   \item \strong{HHI} = sum of squared shares. Shares are used as
+#'     supplied: percentages (0 to 100) give an HHI on the 0 to 10,000
+#'     scale, proportions (0 to 1) give an HHI on the 0 to 1 scale.
 #'   \item \strong{CR_n} = sum of the top-n shares. Defaults to CR4.
 #'     Same units as the input.
 #'   \item \strong{Entropy} = Shannon entropy in bits, computed on the
-#'     normalised proportions. Maximum entropy at uniform distribution
-#'     is `log2(n)` where `n` is the number of non-zero shares.
+#'     normalised proportions (so it is invariant to the input scale).
+#'     Maximum entropy at uniform distribution is `log2(n)` where `n`
+#'     is the number of non-zero shares.
 #' }
+#'
+#' When `x` is a filtered subset whose shares no longer total 100 (or
+#' 1), the raw HHI and CR_n understate within-subset concentration.
+#' Set `rescale = TRUE` to normalise shares to percentages summing to
+#' 100 before computing HHI and CR_n; entropy is unaffected.
 #'
 #' Rows with `NA`, zero, or negative shares are dropped before
 #' computation. If a `group_cols` argument is supplied, the metrics
@@ -34,6 +37,10 @@
 #' @param group_cols Optional character vector of grouping columns. If
 #'   supplied, returns one row of metrics per group.
 #' @param top_n Integer. The N for the CR_n top-share metric. Default 4.
+#' @param rescale Logical. If `TRUE`, normalise the (positive) shares
+#'   to percentages summing to 100 before computing HHI and CR_n, so
+#'   the metrics measure concentration within the rows supplied.
+#'   Default `FALSE` (use shares as supplied).
 #'
 #' @references
 #' Hirschman, A. O. (1964). "The Paternity of an Index". \emph{The
@@ -62,7 +69,8 @@
 aei_concentration <- function(x,
                               share_col = NULL,
                               group_cols = NULL,
-                              top_n = 4L) {
+                              top_n = 4L,
+                              rescale = FALSE) {
   if (!is.data.frame(x)) {
     cli::cli_abort("`x` must be a data.frame. Got {.cls {class(x)[1L]}}.")
   }
@@ -90,17 +98,19 @@ aei_concentration <- function(x,
     }
     g <- do.call(paste, c(x[group_cols], sep = ""))
     out <- do.call(rbind, lapply(split(x, g), function(sub) {
-      r <- .aei_concentration_one(sub[[share_col]], top_n = top_n)
+      r <- .aei_concentration_one(sub[[share_col]], top_n = top_n,
+                                  rescale = rescale)
       cbind(sub[1L, group_cols, drop = FALSE], r)
     }))
     rownames(out) <- NULL
     return(out)
   }
-  .aei_concentration_one(x[[share_col]], top_n = top_n)
+  .aei_concentration_one(x[[share_col]], top_n = top_n, rescale = rescale)
 }
 
-.aei_concentration_one <- function(share, top_n = 4L) {
+.aei_concentration_one <- function(share, top_n = 4L, rescale = FALSE) {
   s <- share[!is.na(share) & share > 0]
+  if (isTRUE(rescale) && length(s)) s <- s / sum(s) * 100
   if (length(s) == 0L) {
     out <- data.frame(n = 0L, hhi = NA_real_, entropy_bits = NA_real_,
                       entropy_max_bits = NA_real_,

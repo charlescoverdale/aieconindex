@@ -9,7 +9,7 @@ aei_compare(
   release_b,
   source = c("claude_ai", "1p_api"),
   variant = c("raw", "enriched"),
-  by = c("cluster_name", "facet", "variable"),
+  by = NULL,
   value_col = "value",
   use_cache = TRUE
 )
@@ -20,14 +20,14 @@ aei_compare(
 
 \item{source}{Character. Either \code{"claude_ai"} or \code{"1p_api"}.}
 
-\item{variant}{Character. Either \code{"raw"} or \code{"enriched"}.}
+\item{variant}{Character. Either \code{"raw"} or \code{"enriched"}. Ignored
+for monthly-schema releases (2026-06-26 onwards).}
 
-\item{by}{Character vector of join keys. Default is
-\code{c("cluster_name", "facet", "variable")} for the long-format
-schema. Add \code{c("geo_id", "geography")} to compare geography rows.}
+\item{by}{Character vector of join keys, or \code{NULL} (the default) to
+choose them automatically from the schema both releases share.}
 
 \item{value_col}{Character. Name of the numeric column to compare.
-Default \code{"value"} for long-format AEI tables.}
+Default \code{"value"}.}
 
 \item{use_cache}{Logical. If \code{TRUE} (the default), use the local
 cache when present.}
@@ -44,16 +44,22 @@ O*NET task or country has shifted between two points in time.
 \details{
 The function fetches both releases via \code{\link[=aei_index]{aei_index()}}, inner-joins
 them on the columns in \code{by}, and returns one row per shared key
-with both values plus the absolute and percentage change. The
-default join keys (\code{cluster_name}, \code{facet}, \code{variable}) are the
-natural composite key of the long-format AEI schema introduced in
-the 2025-09-15 release. For comparisons that include geographic
+with both values plus the absolute and percentage change. When \code{by}
+is \code{NULL} (the default) the join keys are chosen from the columns
+the two tables share: \code{c("cluster_name", "facet", "variable")} for
+the long-format schema (2025-09-15 to 2026-03-24), or
+\code{c("geo_id", "geo_level", "category_name", "hierarchy_level", "metric_id", "node_name")} for the monthly schema (2026-06-26
+onwards). For long-format comparisons that include geographic
 breakdowns add \code{geo_id} and \code{geography} to \code{by}.
 
-Releases that ship in different schemas (the wide-format 2025-02-10
-and 2025-03-27 releases vs the long-format 2025-09-15+) cannot be
-compared directly. Use \code{\link[=aei_download]{aei_download()}} and a hand-written join in
-that case.
+Monthly-schema releases can contain more than one calendar month.
+Before joining, each side is filtered to its most recent
+\code{date_start} window so that keys stay unique; a message reports the
+window used.
+
+Releases that ship in different schemas cannot be compared
+directly. Use \code{\link[=aei_download]{aei_download()}} and a hand-written join in that
+case.
 
 Pct-change is calculated as \code{(value_b - value_a) / value_a * 100}
 and is \code{NA} where \code{value_a} is zero.

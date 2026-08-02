@@ -1,3 +1,54 @@
+# aieconindex 0.2.0
+
+Support for the 2026-06-26 release and its new monthly-aggregate
+schema, plus a live fallback so releases published after a package
+version was built remain reachable.
+
+## New release support
+
+* Bundled metadata now includes `release_2026_06_26` (April and May
+  2026 data, monthly cadence, Artifacts metrics, "Cadences" report).
+* `aei_index()` recognises the monthly filename convention
+  (`aei_<source>_<date>.csv`; the raw/enriched variant was dropped
+  from filenames) and the new monthly schema. The `variant` argument
+  is ignored for monthly releases. If a release breaks the filename
+  convention expected for its epoch, the other epoch's pattern is
+  tried before erroring.
+* `aei_geography()` understands the monthly schema's `geo_level`
+  column and ISO 3166-2 subregion codes, gains a `"subregion"` level,
+  maps `"state_us"` onto US subregions (`geo_id` starting `"US-"`)
+  for monthly releases, and now defaults to `release = "latest"`.
+* `aei_compare()` chooses its default join keys from the schema the
+  two releases share (`by = NULL` is the new default) and filters
+  monthly releases, which can ship several calendar months in one
+  file, to their most recent `date_start` window before joining.
+
+## Live release resolution
+
+* Release resolution (`"latest"`, ids, and dates) now falls back to
+  the live Hugging Face directory listing when an identifier is not in
+  the bundled table, so releases published after this package version
+  was built resolve instead of erroring. The listing is fetched at
+  most once per session; offline use degrades to the bundled list.
+* `aei_index()` reports the file size before starting a download
+  larger than 50 MB (the monthly usage CSVs exceed 200 MB).
+
+## New functions
+
+* `aei_labor_market()` fetches the standalone `labor_market_impacts`
+  tables (`"job_exposure"`, `"task_penetration"`) that Anthropic
+  publishes alongside the dated releases.
+
+## Fixes
+
+* `aei_concentration()` documentation claimed the input scale was
+  detected automatically; it is not, and the docs now describe the
+  actual behaviour. A new `rescale` argument normalises shares to
+  percentages summing to 100 before computing HHI and CR_n, for use
+  on filtered subsets whose shares no longer total 100.
+* `aei_cite()` and `aei_releases()` now carry a report URL for the
+  2026-03-24 release (previously `NA`).
+
 # aieconindex 0.1.1
 
 CRAN maintenance release addressing a check-system issue raised by the

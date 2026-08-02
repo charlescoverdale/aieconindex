@@ -7,6 +7,7 @@ BibTeX
 bibentry
 CC
 CRAN
+Cadences
 Clio
 Coverdale
 crosswalks
@@ -71,6 +72,10 @@ https
 huggingface
 labour
 licences
+erroring
+normalise
+normalises
+schema's
 Lifecycle
 metadata
 modelling
@@ -93,6 +98,10 @@ schemas
 sgini
 schema
 soc
+subregion
+subregions
+Subregion
+Subregions
 substack
 summarises
 summarising

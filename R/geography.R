@@ -1,32 +1,42 @@
-#' Filter the enriched usage table to country or US-state rows
+#' Filter the usage table to country or subregion rows
 #'
 #' From the 2025-09-15 release onward the Anthropic Economic Index
-#' ships a single long-format enriched CSV with one row per
-#' geography-facet-variable combination. Geographic breakdowns are
-#' rows in that table where the `geography` column is `"country"` or
-#' `"state_us"`. This function fetches the enriched table via
-#' [aei_index()] with `variant = "enriched"` and filters those rows.
+#' ships geographic breakdowns as rows of its main usage table. This
+#' function fetches that table via [aei_index()] and filters it to the
+#' requested geographic level, optionally to a single country.
 #'
 #' @details
-#' The enriched table has columns `geo_id` (ISO-3 country code or US
-#' state code after enrichment), `geography` (one of `"country"`,
-#' `"state_us"`, `"global"`), `facet`, `variable`, `cluster_name`, and
-#' `value`. Setting `country = "GBR"` or `country = "AUS"` filters to
-#' that single country; the codes are ISO-3 in the enriched data.
-#' Setting `geography = "state_us"` returns the US-state breakdown
-#' instead of the country breakdown.
+#' Two geographic schemas exist:
+#' \itemize{
+#'   \item Releases from 2025-09-15 to 2026-03-24 (long format) carry a
+#'         `geography` column with values `"country"`, `"state_us"`,
+#'         and `"global"`, plus a `geo_id` column holding ISO-3 country
+#'         codes or US state codes.
+#'   \item Releases from 2026-06-26 onwards (monthly format) carry a
+#'         `geo_level` column with values `"country"`, `"subregion"`,
+#'         and `"global"`, plus a `geo_id` column holding ISO 3166-1
+#'         alpha-3 country codes or ISO 3166-2 subregion codes (US
+#'         states appear as `"US-CA"`, `"US-NY"`, and so on).
+#' }
+#' The `geography` argument is mapped onto whichever schema the release
+#' uses: `"country"` selects country rows in both; `"state_us"` selects
+#' `state_us` rows in the long schema and US subregion rows (`geo_id`
+#' starting `"US-"`) in the monthly schema; `"subregion"` selects all
+#' subregion rows and is only available from 2026-06-26 onwards.
 #'
 #' Releases before 2025-09-15 do not contain geographic data; calling
 #' `aei_geography()` on them returns an informative error.
 #'
-#' @param release A release identifier. See [aei_files()].
+#' @param release A release identifier. See [aei_files()]. Defaults to
+#'   `"latest"`.
 #' @param source Character. Either `"claude_ai"` or `"1p_api"`. The 1P
-#'   API release ships only `"global"` rows, so country filtering will
+#'   API data ships only `"global"` rows, so country filtering will
 #'   typically return nothing for that source.
-#' @param geography Character. Either `"country"` or `"state_us"`.
-#' @param country Optional ISO 3166-1 alpha-3 country code in the
-#'   enriched data (for example `"GBR"`, `"AUS"`, `"USA"`). If `NULL`
-#'   (the default), all countries are returned.
+#' @param geography Character. One of `"country"`, `"state_us"`, or
+#'   `"subregion"`.
+#' @param country Optional ISO 3166-1 alpha-3 country code (for
+#'   example `"GBR"`, `"AUS"`, `"USA"`). If `NULL` (the default), all
+#'   rows at the requested level are returned.
 #' @param use_cache Logical. If `TRUE` (the default), use the local
 #'   cache when present.
 #'
@@ -35,8 +45,8 @@
 #' Evidence from Millions of Claude Conversations. arXiv:2503.04761.
 #' \url{https://arxiv.org/abs/2503.04761}
 #'
-#' @return An [aei_tbl] containing the long-format geographic rows of
-#'   the enriched usage table.
+#' @return An [aei_tbl] containing the geographic rows of the usage
+#'   table.
 #'
 #' @family core data
 #' @export
@@ -47,15 +57,15 @@
 #' head(uk)
 #' options(op)
 #' }
-aei_geography <- function(release = "2025-09-15",
+aei_geography <- function(release = "latest",
                           source = c("claude_ai", "1p_api"),
-                          geography = c("country", "state_us"),
+                          geography = c("country", "state_us", "subregion"),
                           country = NULL,
                           use_cache = TRUE) {
   source    <- match.arg(source)
   geography <- match.arg(geography)
   release_id <- .aei_resolve_release(release)
-  if (release_id %in% c("release_2025_02_10", "release_2025_03_27")) {
+  if (identical(.aei_release_schema(release_id), "wide")) {
     cli::cli_abort(c(
       "Release {.val {release_id}} does not contain geographic data.",
       "i" = "Geographic facets were introduced in release_2025_09_15.",
@@ -64,21 +74,7 @@ aei_geography <- function(release = "2025-09-15",
   }
   enriched <- aei_index(release_id, source = source,
                         variant = "enriched", use_cache = use_cache)
-  if (!"geography" %in% names(enriched)) {
-    cli::cli_abort(c(
-      "The enriched table for release {.val {release_id}} has no {.field geography} column.",
-      "i" = "The schema may have changed; use {.code aei_files({.val {release_id}})} to inspect."
-    ))
-  }
-  out <- enriched[enriched$geography == geography, , drop = FALSE]
-  if (!is.null(country)) {
-    if (!"geo_id" %in% names(out)) {
-      cli::cli_warn("No `geo_id` column to filter on; returning all rows for geography = {.val {geography}}.")
-    } else {
-      keep <- toupper(as.character(out$geo_id)) == toupper(country)
-      out <- out[keep, , drop = FALSE]
-    }
-  }
+  out <- .aei_geography_filter(enriched, geography, country, release_id)
   rownames(out) <- NULL
   new_aei_tbl(out, list(
     endpoint   = "geography",
@@ -88,4 +84,47 @@ aei_geography <- function(release = "2025-09-15",
     source_url = attr(enriched, "aei_query")$source_url,
     fetched_at = Sys.time()
   ))
+}
+
+# Filter a usage table to the requested geographic level, dispatching
+# on whichever geographic schema the table carries. Split out from
+# aei_geography() so the logic can be unit-tested without downloading
+# the (large) usage tables.
+.aei_geography_filter <- function(df, geography, country, release_id = "?") {
+  if ("geo_level" %in% names(df)) {
+    # Monthly schema (2026-06-26 onwards): geo_level + ISO 3166-2
+    # subregion codes.
+    keep <- switch(geography,
+      country   = df$geo_level == "country",
+      state_us  = df$geo_level == "subregion" &
+                    grepl("^US-", as.character(df$geo_id)),
+      subregion = df$geo_level == "subregion"
+    )
+    out <- df[keep, , drop = FALSE]
+  } else if ("geography" %in% names(df)) {
+    # Long schema (2025-09-15 to 2026-03-24): geography column with
+    # country / state_us / global.
+    if (identical(geography, "subregion")) {
+      cli::cli_abort(c(
+        "Release {.val {release_id}} predates the {.val subregion} level.",
+        "i" = "Subregion rows ship from release_2026_06_26 onwards.",
+        "i" = "Use {.code geography = \"state_us\"} for the US-state breakdown."
+      ))
+    }
+    out <- df[df$geography == geography, , drop = FALSE]
+  } else {
+    cli::cli_abort(c(
+      "The table for release {.val {release_id}} has no {.field geography} or {.field geo_level} column.",
+      "i" = "The schema may have changed; use {.code aei_files({.val {release_id}})} to inspect."
+    ))
+  }
+  if (!is.null(country)) {
+    if (!"geo_id" %in% names(out)) {
+      cli::cli_warn("No `geo_id` column to filter on; returning all rows for geography = {.val {geography}}.")
+    } else {
+      keep <- toupper(as.character(out$geo_id)) == toupper(country)
+      out <- out[keep, , drop = FALSE]
+    }
+  }
+  out
 }

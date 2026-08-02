@@ -13,7 +13,7 @@ metadata. If \code{FALSE}, return the bundled list only.}
 }
 \value{
 An \link{aei_tbl} with columns \code{release_id}, \code{release_date},
-\code{model}, and \code{notes}.
+\code{model}, \code{report_url}, and \code{notes}.
 }
 \description{
 Queries the Hugging Face dataset listing for the Anthropic Economic

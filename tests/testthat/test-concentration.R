@@ -69,3 +69,16 @@ test_that("aei_concentration handles all-zero shares without error", {
   expect_equal(out$n, 0L)
   expect_true(is.na(out$hhi))
 })
+
+test_that("aei_concentration rescale normalises shares before HHI and CR", {
+  # Two equal shares that sum to 40: raw HHI is 800, rescaled 5000.
+  df <- data.frame(value = c(20, 20))
+  raw <- aei_concentration(df, top_n = 1L)
+  expect_equal(raw$hhi, 800)
+  expect_equal(raw$cr_1, 20)
+  scaled <- aei_concentration(df, top_n = 1L, rescale = TRUE)
+  expect_equal(scaled$hhi, 5000)
+  expect_equal(scaled$cr_1, 50)
+  # Entropy is scale-invariant
+  expect_equal(raw$entropy_bits, scaled$entropy_bits)
+})

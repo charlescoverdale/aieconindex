@@ -8,7 +8,7 @@
 
 The [Anthropic Economic Index](https://www.anthropic.com/economic-index) (AEI) is a recurring open dataset that maps real Claude conversations to occupations and tasks. Anthropic classifies millions of conversations against the U.S. Department of Labor's [O*NET](https://www.onetonline.org/) task taxonomy and the Standard Occupational Classification (SOC) system, and publishes the resulting usage shares on [Hugging Face](https://huggingface.co/datasets/Anthropic/EconomicIndex) under CC-BY-4.0. Each release also splits conversations into automation-style interactions (the user delegates to Claude) and augmentation-style interactions (the user works through a task with Claude). From the September 2025 release onwards, the data is broken down by country and US state. Methodology is documented in [Handa et al. (2025)](https://arxiv.org/abs/2503.04761); the privacy-preserving classification pipeline is described in [Tamkin et al. (2024)](https://arxiv.org/abs/2412.13678).
 
-Five releases have shipped between February 2025 and March 2026, covering Claude 3.5 Sonnet through Opus 4.5/4.6. `aieconindex` lists releases, fetches raw and enriched usage tables, retrieves task statements and request hierarchies, exposes country and US-state slices, caches downloads, and produces ready-made citations. Schema differences across releases are handled internally. Three runtime dependencies (`cli`, `httr2`, `jsonlite`) plus base R. No API key needed.
+Six releases have shipped between February 2025 and June 2026, covering Claude 3.5 Sonnet through the current model family. From June 2026 the index moved to calendar-month aggregates with country and subregion breakdowns, and Anthropic also publishes standalone labor market impact tables (job exposure and task penetration). `aieconindex` lists releases, fetches usage tables, retrieves task statements and request hierarchies, exposes country and subregion slices, fetches the labor market tables, caches downloads, and produces ready-made citations. Schema differences across releases are handled internally, and releases published after this package version was built still resolve via the live Hugging Face listing. Three runtime dependencies (`cli`, `httr2`, `jsonlite`) plus base R. No API key needed.
 
 ## Table of contents
 
@@ -51,13 +51,14 @@ library(aieconindex)
 
 # 1. See what's available
 aei_releases()
-#> # AEI: releases · 5 rows
+#> # AEI: releases · 6 rows
 #>           release_id release_date               model
-#> 1 release_2026_03_24   2026-03-24 Claude Opus 4.5/4.6
-#> 2 release_2026_01_15   2026-01-15   Claude Sonnet 4.5
-#> 3 release_2025_09_15   2025-09-15     Claude Sonnet 4
-#> 4 release_2025_03_27   2025-03-27   Claude 3.7 Sonnet
-#> 5 release_2025_02_10   2025-02-10   Claude 3.5 Sonnet
+#> 1 release_2026_06_26   2026-06-26   All Claude models
+#> 2 release_2026_03_24   2026-03-24 Claude Opus 4.5/4.6
+#> 3 release_2026_01_15   2026-01-15   Claude Sonnet 4.5
+#> 4 release_2025_09_15   2025-09-15     Claude Sonnet 4
+#> 5 release_2025_03_27   2025-03-27   Claude 3.7 Sonnet
+#> 6 release_2025_02_10   2025-02-10   Claude 3.5 Sonnet
 #> ...
 
 # 2. Look inside a release
@@ -98,12 +99,13 @@ aei_files("2025-03-27", recursive = FALSE)  # top-level only
 `aei_index()` locates the canonical usage CSV by file-pattern matching. Arguments:
 
 - `source`: `"claude_ai"` (consumer product traffic) or `"1p_api"` (first-party API). Not all releases include both.
-- `variant`: `"raw"` (counts and percentages from Anthropic's pipeline) or `"enriched"` (joined to O*NET / SOC metadata, with derived per-capita and tier metrics). Older releases may only ship one variant.
+- `variant`: `"raw"` (counts and percentages from Anthropic's pipeline) or `"enriched"` (joined to O*NET / SOC metadata, with derived per-capita and tier metrics). Older releases may only ship one variant. Ignored for releases from 2026-06-26 onwards, which ship a single file per source.
 
 ```r
+df_monthly  <- aei_index("2026-06-26", source = "claude_ai")
 df_raw      <- aei_index("2026-03-24", source = "claude_ai", variant = "raw")
 df_enriched <- aei_index("2025-09-15", source = "claude_ai", variant = "enriched")
-df_api      <- aei_index("2026-03-24", source = "1p_api",    variant = "raw")
+df_api      <- aei_index("2026-06-26", source = "1p_api")
 ```
 
 `aei_download()` fetches any path returned by `aei_files()`:
@@ -121,7 +123,8 @@ report    <- aei_download("2026-01-15", "aei_v4_appendix.pdf")  # returns local 
 |---|---|
 | `aei_clusters(release, source)` | Request-hierarchy tree (Clio output) as a parsed nested list |
 | `aei_tasks(release)` | O*NET task statements bundled with the release as an `aei_tbl` |
-| `aei_geography(release, country, geography)` | Country or US-state filter on the enriched table |
+| `aei_geography(release, country, geography)` | Country, US-state, or subregion filter on the usage table |
+| `aei_labor_market(table)` | Standalone labor market impacts tables (`"job_exposure"`, `"task_penetration"`) |
 
 ```r
 # Clio-derived request hierarchy (from 2025-09-15 onwards)
@@ -138,15 +141,22 @@ au <- aei_geography("2025-09-15", country = "AUS")
 
 # US state-level breakdown
 us_states <- aei_geography("2025-09-15", geography = "state_us")
+
+# All subregions in the monthly schema (2026-06-26 onwards)
+subs <- aei_geography("2026-06-26", geography = "subregion")
+
+# Standalone labor market impacts tables
+exposure    <- aei_labor_market("job_exposure")
+penetration <- aei_labor_market("task_penetration")
 ```
 
-Country codes are ISO-3 (`"GBR"`, `"AUS"`, `"USA"`). Releases before 2025-09-15 have no geographic data; the function errors informatively.
+Country codes are ISO-3 (`"GBR"`, `"AUS"`, `"USA"`). In the monthly schema (2026-06-26 onwards) subregions carry ISO 3166-2 codes, so US states appear as `"US-CA"`, `"US-NY"`, and so on. Releases before 2025-09-15 have no geographic data; the function errors informatively.
 
 ### Analysis
 
 | Function | Returns |
 |---|---|
-| `aei_compare(release_a, release_b, ...)` | Release-on-release diff with `value_a`, `value_b`, `delta`, `pct_change` |
+| `aei_compare(release_a, release_b, ...)` | Release-on-release diff with `value_a`, `value_b`, `delta`, `pct_change`; join keys auto-detected from the shared schema |
 | `aei_link(x, y, by, type)` | Generic merge that preserves the `aei_tbl` class; for splicing AEI to user-supplied data on a shared key |
 | `aei_concentration(x, share_col, group_cols, top_n)` | HHI, top-N concentration ratio, Shannon entropy on usage shares |
 
@@ -265,7 +275,7 @@ cat(aei_cite("2025-09-15", format = "bibtex"), file = "refs.bib", append = TRUE)
 
 ## Releases covered
 
-The package recognises every release published to Hugging Face up to 2026-03-24 and discovers any newer releases automatically via the Hugging Face tree API.
+The package recognises every release published to Hugging Face up to 2026-06-26. Releases published after this package version was built are discovered automatically via the Hugging Face tree API: they appear in `aei_releases()`, resolve in every data function (including `"latest"`), and default to the newest known schema.
 
 | Release | Headline model | Notes |
 |---|---|---|
@@ -274,8 +284,9 @@ The package recognises every release published to Hugging Face up to 2026-03-24 
 | `release_2025_09_15` | Claude Sonnet 4 | Geographic + first-party API data added; long-format schema |
 | `release_2026_01_15` | Claude Sonnet 4.5 | Economic primitives added |
 | `release_2026_03_24` | Claude Opus 4.5/4.6 | Learning curves added |
+| `release_2026_06_26` | All Claude models | Monthly cadence (April + May 2026); Artifacts metrics; new geo/category/metric schema |
 
-Each release ships its own `data_documentation.md` on Hugging Face. The package's `aei_releases()` blends bundled metadata (model, report URL) with a live Hugging Face listing.
+Each release ships its own `data_documentation.md` on Hugging Face. The package's `aei_releases()` blends bundled metadata (model, report URL) with a live Hugging Face listing. Anthropic also publishes a standalone `labor_market_impacts` directory (job exposure and task penetration tables), available via `aei_labor_market()`.
 
 ## Caching
 
@@ -298,7 +309,7 @@ aei_cache_info()
 aei_cache_clear()  # removes all cached files
 ```
 
-The latest release usage CSVs are around 100 MB each, so the first call to a fresh release is bandwidth-heavy. Subsequent calls are served from disk.
+The latest release usage CSVs are large (the June 2026 `claude_ai` file exceeds 200 MB), so the first call to a fresh release is bandwidth-heavy; `aei_index()` reports the file size before starting any download over 50 MB. Subsequent calls are served from disk.
 
 ## Relationship to the Anthropic Python notebooks
 
@@ -337,7 +348,7 @@ aei_cite("2025-09-15", format = "bibtex")
 
 ## Contributing
 
-Issues and pull requests welcome at https://github.com/charlescoverdale/aieconindex/issues. Useful contributions for v0.2 include:
+Issues and pull requests welcome at https://github.com/charlescoverdale/aieconindex/issues. Useful contributions for v0.3 include:
 
 - Occupational crosswalks (SOC ↔ ANZSCO ↔ ISCO ↔ SOC2010_UK)
 - Joins to ONS Labour Force Survey, BLS OEWS, ABS Labour Force

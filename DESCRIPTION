@@ -1,6 +1,6 @@
 Package: aieconindex
 Title: Access the 'Anthropic Economic Index' Dataset
-Version: 0.1.1
+Version: 0.2.0
 Authors@R: person("Charles", "Coverdale", email = "charlesfcoverdale@gmail.com", role = c("aut", "cre"))
 Description: Provides clean, tidy access to the 'Anthropic Economic Index'
     (AEI) dataset hosted on 'Hugging Face'
@@ -12,9 +12,10 @@ Description: Provides clean, tidy access to the 'Anthropic Economic Index'
     (2025) <doi:10.48550/arXiv.2503.04761> and the privacy-preserving system 'Clio'
     of Tamkin et al. (2024) <doi:10.48550/arXiv.2412.13678>. Functions list available
     releases, fetch raw and enriched usage tables, retrieve task
-    statements, request hierarchies, and country-level breakdowns,
-    compare two releases, join the index to user-supplied data on a
-    shared key, and compute usage-concentration metrics
+    statements, request hierarchies, country-level breakdowns, and the
+    standalone labor market impacts tables (job exposure and task
+    penetration), compare two releases, join the index to user-supplied
+    data on a shared key, and compute usage-concentration metrics
     (Herfindahl-Hirschman Index, top-N concentration ratios, Shannon
     entropy). Data is cached locally for subsequent calls.
     Reproducibility helpers produce 'BibTeX' or plain-text citations

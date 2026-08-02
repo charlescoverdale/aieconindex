@@ -50,7 +50,28 @@ df <- aei_index("latest", source = "claude_ai", variant = "raw")
 head(df)
 ```
 
-The `source` argument selects between Claude.ai consumer traffic (`"claude_ai"`) and first-party API traffic (`"1p_api"`). The `variant` argument selects between raw counts (`"raw"`) and tables already enriched with O*NET and SOC metadata (`"enriched"`).
+The `source` argument selects between Claude.ai consumer traffic (`"claude_ai"`) and first-party API traffic (`"1p_api"`). The `variant` argument selects between raw counts (`"raw"`) and tables already enriched with O*NET and SOC metadata (`"enriched"`); it is ignored for releases from 2026-06-26 onwards, which ship a single file per source.
+
+From the 2026-06-26 release the AEI publishes calendar-month aggregates: one row per date window, geography, category, and metric, with `geo_level`, `category_name`, `hierarchy_level`, `metric_id`, and `node_name` columns. A release can contain more than one month; filter on `date_start` for a single window.
+
+```{r}
+df <- aei_index("2026-06-26", source = "claude_ai")
+may <- df[df$date_start == max(df$date_start), ]
+```
+
+Geographic slices work across schemas. In the monthly schema, subregions carry ISO 3166-2 codes (US states appear as `"US-CA"`):
+
+```{r}
+uk <- aei_geography("2026-06-26", country = "GBR")
+subs <- aei_geography("2026-06-26", geography = "subregion")
+```
+
+Anthropic also publishes standalone labor market impact tables alongside the dated releases:
+
+```{r}
+exposure <- aei_labor_market("job_exposure")
+penetration <- aei_labor_market("task_penetration")
+```
 
 ## Fetching arbitrary files
 

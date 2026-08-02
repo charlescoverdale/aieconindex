@@ -4,7 +4,13 @@
 \alias{aei_concentration}
 \title{Usage concentration metrics for an Anthropic Economic Index slice}
 \usage{
-aei_concentration(x, share_col = NULL, group_cols = NULL, top_n = 4L)
+aei_concentration(
+  x,
+  share_col = NULL,
+  group_cols = NULL,
+  top_n = 4L,
+  rescale = FALSE
+)
 }
 \arguments{
 \item{x}{A \code{data.frame} (or \link{aei_tbl}) with a column of shares.}
@@ -17,6 +23,11 @@ aei_concentration(x, share_col = NULL, group_cols = NULL, top_n = 4L)
 supplied, returns one row of metrics per group.}
 
 \item{top_n}{Integer. The N for the CR_n top-share metric. Default 4.}
+
+\item{rescale}{Logical. If \code{TRUE}, normalise the (positive) shares
+to percentages summing to 100 before computing HHI and CR_n, so
+the metrics measure concentration within the rows supplied.
+Default \code{FALSE} (use shares as supplied).}
 }
 \value{
 A \code{data.frame} with columns \code{n} (number of non-zero shares),
@@ -36,18 +47,21 @@ reports for percentage shares.
 Three measures are produced for each call:
 
 \itemize{
-\item \strong{HHI} = sum of squared shares. When shares are in
-percentages (0 to 100), HHI ranges from 0 (perfect dispersion)
-to 10,000 (one item holds all). When shares are in proportions
-(0 to 1), HHI ranges from 0 to 1. The function detects the
-scale automatically: if \code{max(share) > 1} the shares are treated
-as percentages, otherwise as proportions.
+\item \strong{HHI} = sum of squared shares. Shares are used as
+supplied: percentages (0 to 100) give an HHI on the 0 to 10,000
+scale, proportions (0 to 1) give an HHI on the 0 to 1 scale.
 \item \strong{CR_n} = sum of the top-n shares. Defaults to CR4.
 Same units as the input.
 \item \strong{Entropy} = Shannon entropy in bits, computed on the
-normalised proportions. Maximum entropy at uniform distribution
-is \code{log2(n)} where \code{n} is the number of non-zero shares.
+normalised proportions (so it is invariant to the input scale).
+Maximum entropy at uniform distribution is \code{log2(n)} where \code{n}
+is the number of non-zero shares.
 }
+
+When \code{x} is a filtered subset whose shares no longer total 100 (or
+1), the raw HHI and CR_n understate within-subset concentration.
+Set \code{rescale = TRUE} to normalise shares to percentages summing to
+100 before computing HHI and CR_n; entropy is unaffected.
 
 Rows with \code{NA}, zero, or negative shares are dropped before
 computation. If a \code{group_cols} argument is supplied, the metrics
