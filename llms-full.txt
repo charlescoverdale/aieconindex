@@ -1,0 +1,530 @@
+# aieconindex: full API reference
+
+> Provides clean, tidy access to the 'Anthropic Economic Index' (AEI) dataset hosted on 'Hugging Face'.
+
+- Version: 0.2.0
+- Install: `install.packages("aieconindex")`
+- CRAN: https://CRAN.R-project.org/package=aieconindex
+- GitHub: https://github.com/charlescoverdale/aieconindex
+
+This file is a self-contained reference for LLM agents: every exported
+function with its signature, arguments, return value, and example.
+
+---
+
+## `aei_cache_clear()`
+
+**Clear the aieconindex cache**
+
+Deletes all locally cached AEI files. The next call to any data function will re-download from Hugging Face.
+
+**Usage**
+
+```r
+aei_cache_clear()
+```
+
+**Returns**
+
+Invisible `NULL`.
+
+**Example**
+
+```r
+op <- options(aieconindex.cache_dir = tempdir())
+aei_cache_clear()
+options(op)
+```
+
+---
+
+## `aei_cache_dir()`
+
+**Locate the aieconindex cache directory**
+
+Returns the directory used to store downloaded AEI files. Defaults to `tools::R_user_dir("aieconindex", "cache")`. Override by setting `options(aieconindex.cache_dir = "/your/path")`.
+
+**Usage**
+
+```r
+aei_cache_dir()
+```
+
+**Returns**
+
+A character string giving the absolute path.
+
+---
+
+## `aei_cache_info()`
+
+**Inspect the local aieconindex cache**
+
+Returns information about the local cache: where it lives, how many files it contains, and how much disk space they take.
+
+**Usage**
+
+```r
+aei_cache_info()
+```
+
+**Returns**
+
+A list with elements `dir`, `n_files`, `size_bytes`, `size_human`, and `files` (a data frame with `name`, `size_bytes`, and `modified` columns).
+
+**Example**
+
+```r
+op <- options(aieconindex.cache_dir = tempdir())
+aei_cache_info()
+options(op)
+```
+
+---
+
+## `aei_cite()`
+
+**Citation strings for the Anthropic Economic Index**
+
+Returns a citation for either the Anthropic Economic Index project as a whole or a specific release, in the requested format. The Anthropic Economic Index data is released under Creative Commons Attribution 4.0 International (CC-BY-4.0); attribution is required when redistributing the data.
+
+**Usage**
+
+```r
+aei_cite(
+  release = "all",
+  format = c("text", "bibtex", "bibentry"),
+  method = TRUE
+)
+```
+
+**Arguments**
+
+- `release`: A release identifier, or `"all"` (the default) to cite the project rather than a specific release.
+- `format`: One of `"text"`, `"bibtex"`, or `"bibentry"`.
+- `method`: Logical. If `TRUE` (the default), include the methodological source paper (Handa et al. 2025) in the BibTeX or bibentry output. Set to `FALSE` to return the dataset citation only.
+
+**Returns**
+
+A character vector for `"text"` and `"bibtex"`; a `bibentry` object (possibly with multiple entries) for `"bibentry"`.
+
+**Example**
+
+```r
+aei_cite()
+aei_cite("2026-03-24", format = "bibtex")
+aei_cite("2025-09-15", format = "bibentry")
+aei_cite(format = "text", method = FALSE)
+```
+
+---
+
+## `aei_clusters()`
+
+**Fetch the request-hierarchy tree for a release**
+
+The Anthropic Economic Index groups Claude requests into a multi-level hierarchy of clusters using the Clio privacy-preserving system. From the 2025-09-15 release onwards each release ships these trees as JSON files. This function fetches the relevant tree as a parsed nested list.
+
+**Usage**
+
+```r
+aei_clusters(
+  release = "latest",
+  source = c("claude_ai", "1p_api"),
+  use_cache = TRUE
+)
+```
+
+**Arguments**
+
+- `release`: A release identifier. See `aei_files()`.
+- `source`: Character. Either `"claude_ai"` or `"1p_api"`.
+- `use_cache`: Logical. If `TRUE` (the default), use the local cache when present.
+
+**Returns**
+
+The parsed request hierarchy as a nested list.
+
+**Example**
+
+```r
+op <- options(aieconindex.cache_dir = tempdir())
+tree <- aei_clusters("2025-09-15")
+length(tree)
+options(op)
+```
+
+---
+
+## `aei_compare()`
+
+**Compare two Anthropic Economic Index releases**
+
+Side-by-side diff of the same metric across two releases. Useful for tracking how the share of conversations classified to a given O*NET task or country has shifted between two points in time.
+
+**Usage**
+
+```r
+aei_compare(
+  release_a,
+  release_b,
+  source = c("claude_ai", "1p_api"),
+  variant = c("raw", "enriched"),
+  by = NULL,
+  value_col = "value",
+  use_cache = TRUE
+)
+```
+
+**Arguments**
+
+- `release_a, release_b`: Release identifiers. See `aei_files()`. `release_a` is treated as the baseline.
+- `source`: Character. Either `"claude_ai"` or `"1p_api"`.
+- `variant`: Character. Either `"raw"` or `"enriched"`. Ignored for monthly-schema releases (2026-06-26 onwards).
+- `by`: Character vector of join keys, or `NULL` (the default) to choose them automatically from the schema both releases share.
+- `value_col`: Character. Name of the numeric column to compare. Default `"value"`.
+- `use_cache`: Logical. If `TRUE` (the default), use the local cache when present.
+
+**Returns**
+
+An aei_tbl with the join keys plus `value_a`, `value_b`, `delta` (= `value_b - value_a`), and `pct_change`.
+
+**Example**
+
+```r
+op <- options(aieconindex.cache_dir = tempdir())
+diff <- aei_compare("2025-09-15", "2026-03-24")
+head(diff[order(-abs(diff$delta)), ])
+options(op)
+```
+
+---
+
+## `aei_concentration()`
+
+**Usage concentration metrics for an Anthropic Economic Index slice**
+
+Computes Herfindahl-Hirschman Index (HHI), top-N concentration ratios (CR4 by default), and Shannon entropy on a vector of usage shares. Useful for asking "how concentrated is Claude usage across tasks / occupations / countries?" against the same data the AEI reports for percentage shares.
+
+**Usage**
+
+```r
+aei_concentration(
+  x,
+  share_col = NULL,
+  group_cols = NULL,
+  top_n = 4L,
+  rescale = FALSE
+)
+```
+
+**Arguments**
+
+- `x`: A `data.frame` (or aei_tbl) with a column of shares.
+- `share_col`: Character. Name of the share column. Defaults to `"value"` (the long-format AEI column name) if present, otherwise `"pct"`.
+- `group_cols`: Optional character vector of grouping columns. If supplied, returns one row of metrics per group.
+- `top_n`: Integer. The N for the CR_n top-share metric. Default 4.
+- `rescale`: Logical. If `TRUE`, normalise the (positive) shares to percentages summing to 100 before computing HHI and CR_n, so the metrics measure concentration within the rows supplied. Default `FALSE` (use shares as supplied).
+
+**Returns**
+
+A `data.frame` with columns `n` (number of non-zero shares), `hhi`, `cr_n` (named after `top_n`, e.g. `cr_4`), `entropy_bits`, `entropy_max_bits` (= `log2(n)`), and `entropy_normalised` (`entropy_bits / entropy_max_bits`, on the unit interval). When `group_cols` is supplied, the grouping columns are prepended.
+
+**Example**
+
+```r
+op <- options(aieconindex.cache_dir = tempdir())
+uk <- aei_geography("2025-09-15", country = "GBR")
+uk_tasks <- uk[uk$facet == "onet_task" & uk$variable == "onet_task_pct", ]
+aei_concentration(uk_tasks)
+options(op)
+```
+
+---
+
+## `aei_download()`
+
+**Download an arbitrary file from an Anthropic Economic Index release**
+
+Lower-level fetcher than `aei_index()`. Pass any path returned by `aei_files()` and get the file back as a parsed data frame (CSV) or list (JSON), or as a local path if the file extension is unrecognised.
+
+**Usage**
+
+```r
+aei_download(release, path, use_cache = TRUE)
+```
+
+**Arguments**
+
+- `release`: A release identifier. See `aei_files()`.
+- `path`: Character. A relative path within the release directory, for example `"data/aei_raw_claude_ai_2026-02-05_to_2026-02-12.csv"`.
+- `use_cache`: Logical. If `TRUE` (the default), use the local cache when present.
+
+**Returns**
+
+For CSV files, an aei_tbl. For JSON files, the parsed list. For other extensions, the absolute local path of the cached file.
+
+**Example**
+
+```r
+op <- options(aieconindex.cache_dir = tempdir())
+aei_download("2025-03-27", "task_pct_v2.csv")
+options(op)
+```
+
+---
+
+## `aei_files()`
+
+**List files in an Anthropic Economic Index release**
+
+Returns the file tree for a single release directory on Hugging Face, descending into subdirectories. Useful for inspecting what raw files are available before calling `aei_download()` or `aei_index()`.
+
+**Usage**
+
+```r
+aei_files(release = "latest", recursive = TRUE)
+```
+
+**Arguments**
+
+- `release`: A release identifier. Either `"latest"`, a release id such as `"release_2026_03_24"`, or a date string `"2026-03-24"`.
+- `recursive`: Logical. If `TRUE` (the default), recurse into subdirectories. If `FALSE`, list only the top level of the release.
+
+**Returns**
+
+An aei_tbl with columns `path`, `type`, and `size_bytes`.
+
+**Example**
+
+```r
+op <- options(aieconindex.cache_dir = tempdir())
+aei_files("2026-03-24", recursive = FALSE)
+options(op)
+```
+
+---
+
+## `aei_geography()`
+
+**Filter the usage table to country or subregion rows**
+
+From the 2025-09-15 release onward the Anthropic Economic Index ships geographic breakdowns as rows of its main usage table. This function fetches that table via `aei_index()` and filters it to the requested geographic level, optionally to a single country.
+
+**Usage**
+
+```r
+aei_geography(
+  release = "latest",
+  source = c("claude_ai", "1p_api"),
+  geography = c("country", "state_us", "subregion"),
+  country = NULL,
+  use_cache = TRUE
+)
+```
+
+**Arguments**
+
+- `release`: A release identifier. See `aei_files()`. Defaults to `"latest"`.
+- `source`: Character. Either `"claude_ai"` or `"1p_api"`. The 1P API data ships only `"global"` rows, so country filtering will typically return nothing for that source.
+- `geography`: Character. One of `"country"`, `"state_us"`, or `"subregion"`.
+- `country`: Optional ISO 3166-1 alpha-3 country code (for example `"GBR"`, `"AUS"`, `"USA"`). If `NULL` (the default), all rows at the requested level are returned.
+- `use_cache`: Logical. If `TRUE` (the default), use the local cache when present.
+
+**Returns**
+
+An aei_tbl containing the geographic rows of the usage table.
+
+**Example**
+
+```r
+op <- options(aieconindex.cache_dir = tempdir())
+uk <- aei_geography("2025-09-15", country = "GBR")
+head(uk)
+options(op)
+```
+
+---
+
+## `aei_index()`
+
+**Fetch the main usage table for an Anthropic Economic Index release**
+
+Convenience wrapper that locates the canonical usage CSV for a release and returns it as a tidy data frame. The shape and exact filename of the canonical table varies across releases (the AEI refactored its directory layout in late 2025); this function papers over that variation by matching against well-known filename patterns.
+
+**Usage**
+
+```r
+aei_index(
+  release = "latest",
+  source = c("claude_ai", "1p_api"),
+  variant = c("raw", "enriched"),
+  use_cache = TRUE
+)
+```
+
+**Arguments**
+
+- `release`: A release identifier. See `aei_files()` for the list of valid forms.
+- `source`: Character. Either `"claude_ai"` (Claude.ai consumer product traffic) or `"1p_api"` (first-party API traffic). Not all releases include both.
+- `variant`: Character. Either `"raw"` (counts and percentages straight from Anthropic's pipeline) or `"enriched"` (joined to O*NET / SOC metadata, with derived per-capita and tier metrics). Older releases may only ship one variant. Ignored for releases from 2026-06-26 onwards, which ship a single file per source.
+- `use_cache`: Logical. If `TRUE` (the default), use the local cache when present. If `FALSE`, force a fresh download.
+
+**Returns**
+
+An aei_tbl containing the usage table.
+
+**Example**
+
+```r
+op <- options(aieconindex.cache_dir = tempdir())
+aei_index("2025-09-15", variant = "enriched")
+options(op)
+```
+
+---
+
+## `aei_labor_market()`
+
+**Fetch the AEI labor market impacts tables**
+
+Alongside the dated releases, the Anthropic Economic Index publishes a standalone `labor_market_impacts` directory on Hugging Face with two tables from Anthropic's labor market research: occupation-level job exposure and task-level penetration. This function fetches either table. The directory keeps Anthropic's US spelling.
+
+**Usage**
+
+```r
+aei_labor_market(
+  table = c("job_exposure", "task_penetration"),
+  use_cache = TRUE
+)
+```
+
+**Arguments**
+
+- `table`: Character. Either `"job_exposure"` (the default) or `"task_penetration"`.
+- `use_cache`: Logical. If `TRUE` (the default), use the local cache when present.
+
+**Returns**
+
+An aei_tbl containing the requested table.
+
+**Example**
+
+```r
+op <- options(aieconindex.cache_dir = tempdir())
+exposure <- aei_labor_market("job_exposure")
+head(exposure)
+options(op)
+```
+
+---
+
+## `aei_link()`
+
+**Join an Anthropic Economic Index table to your own data**
+
+Generic merge helper that preserves the aei_tbl class and provenance metadata. Use it to splice the AEI to any external data frame on a shared key column, for example joining country-level AEI shares to working-age employment counts from a national labour-force survey, or joining O*NET task identifiers to a user-supplied occupational crosswalk (SOC to ANZSCO, SOC to ISCO, SOC to SOC2020 UK, etc.).
+
+**Usage**
+
+```r
+aei_link(
+  x,
+  y,
+  by,
+  type = c("left", "inner", "full"),
+  suffixes = c(".aei", ".y")
+)
+```
+
+**Arguments**
+
+- `x`: An aei_tbl returned by any data-fetching function.
+- `y`: A `data.frame` (or `aei_tbl`) to join.
+- `by`: Character vector of column names present in both `x` and `y`. Pass a named vector (e.g. `c(cluster_name = "onet_id")`) to join columns with different names.
+- `type`: One of `"left"` (the default; keep all rows of `x`), `"inner"` (keep only matched rows), or `"full"` (keep all rows of both, fill with `NA`).
+- `suffixes`: Character vector of length two giving suffixes to append to overlapping column names.
+
+**Returns**
+
+An aei_tbl with the joined columns. Provenance metadata from `x` is preserved.
+
+**Example**
+
+```r
+op <- options(aieconindex.cache_dir = tempdir())
+# Join AEI country shares to a small external table of GDP per capita
+country <- aei_geography("2025-09-15")
+overlay <- data.frame(
+  geo_id = c("GBR", "AUS", "USA"),
+  gdp_pc = c(48000, 65000, 80000)
+)
+joined <- aei_link(country, overlay, by = "geo_id")
+head(joined)
+options(op)
+```
+
+---
+
+## `aei_releases()`
+
+**List available Anthropic Economic Index releases**
+
+Queries the Hugging Face dataset listing for the Anthropic Economic Index and returns one row per release, augmented with the headline Claude model and a short note when the release is recognised. When the network is unavailable (or `live = FALSE`), the function returns the bundled list of releases known at package build time.
+
+**Usage**
+
+```r
+aei_releases(live = TRUE)
+```
+
+**Arguments**
+
+- `live`: Logical. If `TRUE` (the default), query Hugging Face for the current set of release directories and merge with the bundled metadata. If `FALSE`, return the bundled list only.
+
+**Returns**
+
+An aei_tbl with columns `release_id`, `release_date`, `model`, `report_url`, and `notes`.
+
+**Example**
+
+```r
+op <- options(aieconindex.cache_dir = tempdir())
+aei_releases()
+aei_releases(live = FALSE)
+options(op)
+```
+
+---
+
+## `aei_tasks()`
+
+**Fetch the O*NET task statements bundled with a release**
+
+Returns the table of O*NET task statements that the Anthropic Economic Index uses as its task taxonomy.
+
+**Usage**
+
+```r
+aei_tasks(release = "2025-03-27", use_cache = TRUE)
+```
+
+**Arguments**
+
+- `release`: A release identifier. See `aei_files()`.
+- `use_cache`: Logical. If `TRUE` (the default), use the local cache when present.
+
+**Returns**
+
+An aei_tbl containing the task statements.
+
+**Example**
+
+```r
+op <- options(aieconindex.cache_dir = tempdir())
+aei_tasks("2025-03-27")
+options(op)
+```
+
+---
+
