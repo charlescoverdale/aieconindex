@@ -334,6 +334,7 @@ Anthropic ships its own replication code as Jupyter notebooks inside several rel
 | [`ons`](https://github.com/charlescoverdale/ons) | UK labour market data (employment, wages by occupation) |
 | [`fred`](https://github.com/charlescoverdale/fred) | US labour market data (employment, productivity, occupational wages) |
 | [`readoecd`](https://github.com/charlescoverdale/readoecd) | OECD international labour and skills data |
+| [`evaluatellm`](https://github.com/charlescoverdale/evaluatellm) | Statistical inference for LLM evaluations |
 
 ## Citation
 
