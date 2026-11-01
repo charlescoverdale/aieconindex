@@ -52,13 +52,13 @@ library(aieconindex)
 # 1. See what's available
 aei_releases()
 #> # AEI: releases · 6 rows
-#>           release_id release_date               model
-#> 1 release_2026_06_26   2026-06-26   All Claude models
-#> 2 release_2026_03_24   2026-03-24 Claude Opus 4.5/4.6
-#> 3 release_2026_01_15   2026-01-15   Claude Sonnet 4.5
-#> 4 release_2025_09_15   2025-09-15     Claude Sonnet 4
-#> 5 release_2025_03_27   2025-03-27   Claude 3.7 Sonnet
-#> 6 release_2025_02_10   2025-02-10   Claude 3.5 Sonnet
+#>          release_id release_date               model
+#>  release_2026_06_26   2026-06-26   All Claude models
+#>  release_2026_03_24   2026-03-24 Claude Opus 4.5/4.6
+#>  release_2026_01_15   2026-01-15   Claude Sonnet 4.5
+#>  release_2025_09_15   2025-09-15     Claude Sonnet 4
+#>  release_2025_03_27   2025-03-27   Claude 3.7 Sonnet
+#>  release_2025_02_10   2025-02-10   Claude 3.5 Sonnet
 #> ...
 
 # 2. Look inside a release
