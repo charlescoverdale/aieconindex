@@ -1,3 +1,13 @@
+# aieconindex (development version)
+
+* An HTTP error status from Hugging Face (for example a 404 for a
+  release path that does not exist, or a 403) is now reported with its
+  status code and URL. Previously `req_perform()` raised on any 4xx
+  inside a catch-all handler, so `aei_files()` told users to check
+  their internet connection when the server had in fact answered, and the dedicated
+  404 messages were unreachable. A failed download no longer leaves a
+  partial file in the cache.
+
 # aieconindex 0.2.0
 
 Support for the 2026-06-26 release and its new monthly-aggregate

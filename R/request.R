@@ -1,10 +1,12 @@
 # HTTP layer for fetching files from the Hugging Face mirror of the
 # Anthropic Economic Index. No API key is required; everything is public.
 
-# Fetch a Hugging Face directory listing. Returns a data frame with
-# columns `type` ("file" or "directory"), `path`, and `size`.
-.aei_hf_list <- function(subpath = "") {
-  url <- if (nzchar(subpath)) paste0(.aei_api_base, "/", subpath) else .aei_api_base
+# Build a request with the package's shared settings. HTTP error
+# statuses do not raise inside req_perform(): callers inspect the status
+# and report it with the URL, so a 4xx or 5xx is never mistaken for a
+# connection failure. Only genuine transport errors (offline, DNS, TLS)
+# reach the callers' error handlers.
+.aei_request <- function(url) {
   req <- httr2::request(url)
   req <- httr2::req_user_agent(req, .aei_user_agent())
   req <- httr2::req_retry(
@@ -12,6 +14,14 @@
     is_transient = function(resp) httr2::resp_status(resp) %in% c(429L, 500L, 502L, 503L, 504L),
     backoff = ~ 2
   )
+  httr2::req_error(req, is_error = function(resp) FALSE)
+}
+
+# Fetch a Hugging Face directory listing. Returns a data frame with
+# columns `type` ("file" or "directory"), `path`, and `size`.
+.aei_hf_list <- function(subpath = "") {
+  url <- if (nzchar(subpath)) paste0(.aei_api_base, "/", subpath) else .aei_api_base
+  req <- .aei_request(url)
   resp <- tryCatch(
     httr2::req_perform(req),
     error = function(e) {
@@ -60,17 +70,12 @@
     return(dest)
   }
   url <- .aei_resolve_url(release_id, relpath)
-  req <- httr2::request(url)
-  req <- httr2::req_user_agent(req, .aei_user_agent())
-  req <- httr2::req_retry(
-    req, max_tries = 3L,
-    is_transient = function(resp) httr2::resp_status(resp) %in% c(429L, 500L, 502L, 503L, 504L),
-    backoff = ~ 2
-  )
+  req <- .aei_request(url)
   if (!quiet) cli::cli_inform("Downloading {.url {url}}")
   resp <- tryCatch(
     httr2::req_perform(req, path = dest),
     error = function(e) {
+      if (file.exists(dest)) unlink(dest)
       cli::cli_abort(c(
         "Failed to download {.url {url}}.",
         "i" = "Original error: {conditionMessage(e)}"
