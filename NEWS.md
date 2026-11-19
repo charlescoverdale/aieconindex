@@ -7,6 +7,12 @@
   their internet connection when the server had in fact answered, and the dedicated
   404 messages were unreachable. A failed download no longer leaves a
   partial file in the cache.
+* HTTP requests now time out. httr2 sets no transfer timeout, so a
+  Hugging Face server that accepted the connection and then stalled
+  would hang the R session indefinitely. Requests now abort if
+  connecting takes over 20 seconds or the transfer stalls for 60
+  seconds, and the stall is reported as a normal download error. Slow
+  but progressing downloads of large files are unaffected.
 
 # aieconindex 0.2.0
 

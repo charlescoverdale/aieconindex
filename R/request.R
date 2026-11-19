@@ -5,7 +5,10 @@
 # statuses do not raise inside req_perform(): callers inspect the status
 # and report it with the URL, so a 4xx or 5xx is never mistaken for a
 # connection failure. Only genuine transport errors (offline, DNS, TLS)
-# reach the callers' error handlers.
+# reach the callers' error handlers. The curl options abort a connection
+# that takes over 20 seconds to open, or a transfer that stalls below
+# 1 byte/s for 60 seconds, without capping slow but progressing
+# downloads of large release files.
 .aei_request <- function(url) {
   req <- httr2::request(url)
   req <- httr2::req_user_agent(req, .aei_user_agent())
@@ -13,6 +16,9 @@
     req, max_tries = 3L,
     is_transient = function(resp) httr2::resp_status(resp) %in% c(429L, 500L, 502L, 503L, 504L),
     backoff = ~ 2
+  )
+  req <- httr2::req_options(
+    req, connecttimeout = 20L, low_speed_limit = 1L, low_speed_time = 60L
   )
   httr2::req_error(req, is_error = function(resp) FALSE)
 }

@@ -32,3 +32,10 @@ test_that("a transport failure keeps the connection message", {
   err <- tryCatch(.aei_hf_list(""), error = function(e) e)
   expect_match(conditionMessage(err), "internet connection")
 })
+
+test_that("requests carry connect and stall timeouts", {
+  req <- .aei_request("https://example.org/file.csv")
+  expect_identical(req$options$connecttimeout, 20L)
+  expect_identical(req$options$low_speed_limit, 1L)
+  expect_identical(req$options$low_speed_time, 60L)
+})
